@@ -32,6 +32,18 @@ public class Product {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Column(name = "price_currency", length = 3, nullable = false)
+    private String priceCurrency = "USD";
+
+    @Column(length = 64)
+    private String sku;
+
+    @Column(nullable = false)
+    private Integer stock = 0;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
     @Column(name = "seller_id", nullable = false)
     private Long sellerId;
 
@@ -50,6 +62,9 @@ public class Product {
         this.description = description;
         this.price = price;
         this.sellerId = sellerId;
+        this.active = true;
+        this.stock = 0;
+        this.priceCurrency = "USD";
     }
 
     public Long getId() {
@@ -88,6 +103,42 @@ public class Product {
         this.price = price;
     }
 
+    public BigDecimal getPriceAmount() {
+        return price;
+    }
+
+    public String getPriceCurrency() {
+        return priceCurrency;
+    }
+
+    public void setPriceCurrency(String priceCurrency) {
+        this.priceCurrency = priceCurrency;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     public Long getSellerId() {
         return sellerId;
     }
@@ -109,6 +160,12 @@ public class Product {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.active == false || this.stock == null) {
+            // already set in constructor
+        }
+        if (this.priceCurrency == null) {
+            this.priceCurrency = "USD";
+        }
     }
 
     @PreUpdate
