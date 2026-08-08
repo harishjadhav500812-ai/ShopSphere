@@ -1,0 +1,92 @@
+# =========================
+# Java / Maven / Spring Boot
+# =========================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.springBeans
+.springBootSplice
+spring-boot-devtools.properties
+
+# =========================
+# Node / React / Frontend
+# =========================
+node_modules/
+dist/
+build/
+.vite/
+.turbo/
+.cache/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.key
+secrets/
+credentials/
+
+# =========================
+# IDE - IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# =========================
+# IDE - VS Code
+# =========================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Logs / Temp
+# =========================
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.swp
+*~
+
+# =========================
+# Test / Coverage
+# =========================
+coverage/
+.nyc_output/
+*.lcov
+.jacoco/
+jacoco.exec
+
+# =========================
+# Docker (local overrides)
+# =========================
+docker-compose.override.yml
