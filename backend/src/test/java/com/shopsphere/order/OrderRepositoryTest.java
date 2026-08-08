@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -115,5 +116,47 @@ class OrderRepositoryTest {
         assertThat(orderItemRepository.findByOrderIdIn(List.of(order.getId(), otherOrder.getId())))
                 .extracting(OrderItem::getId)
                 .containsExactlyInAnyOrder(first.getId(), second.getId(), third.getId());
+    }
+
+    @Test
+    void findOrdersBySellerIdAndSellerItems() {
+        Long sellerX = 7701L;
+        Long sellerY = 7702L;
+
+        Order o1 = orderRepository.save(new Order(1010L, OrderStatus.PENDING, new BigDecimal("100.00"), "USD"));
+        Order o2 = orderRepository.save(new Order(1011L, OrderStatus.PENDING, new BigDecimal("50.00"), "USD"));
+
+        OrderItem item1 = orderItemRepository.save(new OrderItem(o1, 8001L, sellerX, "SKU-X", "Product X", new BigDecimal("40.00"), "USD", 1, new BigDecimal("40.00")));
+        OrderItem item2 = orderItemRepository.save(new OrderItem(o1, 8002L, sellerY, "SKU-Y", "Product Y", new BigDecimal("60.00"), "USD", 1, new BigDecimal("60.00")));
+        OrderItem item3 = orderItemRepository.save(new OrderItem(o2, 8003L, sellerY, "SKU-Y2", "Product Y2", new BigDecimal("50.00"), "USD", 1, new BigDecimal("50.00")));
+
+        Page<Order> sellerXOrders = orderRepository.findBySellerId(sellerX, PageRequest.of(0, 10));
+        Page<Order> sellerYOrders = orderRepository.findBySellerId(sellerY, PageRequest.of(0, 10));
+
+        assertThat(sellerXOrders.getContent()).extracting(Order::getId).containsExactly(o1.getId());
+        assertThat(sellerYOrders.getContent()).extracting(Order::getId).contains(o1.getId(), o2.getId());
+
+        List<OrderItem> sellerXItemsForO1 = orderItemRepository.findByOrderIdAndSellerId(o1.getId(), sellerX);
+        assertThat(sellerXItemsForO1).extracting(OrderItem::getId).containsExactly(item1.getId());
+
+        List<OrderItem> sellerXItemsInBatch = orderItemRepository.findByOrderIdInAndSellerId(List.of(o1.getId(), o2.getId()), sellerX);
+        assertThat(sellerXItemsInBatch).extracting(OrderItem::getId).containsExactly(item1.getId());
+    }
+
+    @Test
+    void orderStatusTransitions() {
+        // Valid transitions
+        assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.CONFIRMED)).isTrue();
+        assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.CANCELLED)).isTrue();
+        assertThat(OrderStatus.CONFIRMED.canTransitionTo(OrderStatus.PROCESSING)).isTrue();
+        assertThat(OrderStatus.PROCESSING.canTransitionTo(OrderStatus.SHIPPED)).isTrue();
+        assertThat(OrderStatus.SHIPPED.canTransitionTo(OrderStatus.DELIVERED)).isTrue();
+
+        // Invalid transitions
+        assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.SHIPPED)).isFalse();
+        assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.DELIVERED)).isFalse();
+        assertThat(OrderStatus.DELIVERED.canTransitionTo(OrderStatus.PENDING)).isFalse();
+        assertThat(OrderStatus.CANCELLED.canTransitionTo(OrderStatus.CONFIRMED)).isFalse();
+        assertThat(OrderStatus.DELIVERED.canTransitionTo(OrderStatus.CANCELLED)).isFalse();
     }
 }

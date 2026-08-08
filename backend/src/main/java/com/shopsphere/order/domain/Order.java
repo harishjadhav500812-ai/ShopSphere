@@ -35,8 +35,20 @@ public class Order {
     @Column(nullable = false, length = 20)
     private OrderStatus status;
 
+    @Column(name = "subtotal", precision = 19, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "discount_amount", precision = 19, scale = 2)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Column(name = "tax_amount", precision = 19, scale = 2)
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount;
+
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
 
     @Column(nullable = false, length = 3)
     private String currency;
@@ -58,10 +70,18 @@ public class Order {
     }
 
     public Order(Long userId, OrderStatus status, BigDecimal totalAmount, String currency) {
+        this(userId, status, totalAmount, BigDecimal.ZERO, BigDecimal.ZERO, totalAmount, currency, null);
+    }
+
+    public Order(Long userId, OrderStatus status, BigDecimal subtotal, BigDecimal discountAmount, BigDecimal taxAmount, BigDecimal totalAmount, String currency, String couponCode) {
         this.userId = userId;
         this.status = status;
+        this.subtotal = subtotal != null ? subtotal : totalAmount;
+        this.discountAmount = discountAmount != null ? discountAmount : BigDecimal.ZERO;
+        this.taxAmount = taxAmount != null ? taxAmount : BigDecimal.ZERO;
         this.totalAmount = totalAmount;
         this.currency = currency;
+        this.couponCode = couponCode;
     }
 
     @PrePersist
@@ -92,12 +112,44 @@ public class Order {
         this.status = status;
     }
 
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public BigDecimal getTaxAmount() {
+        return taxAmount;
+    }
+
+    public void setTaxAmount(BigDecimal taxAmount) {
+        this.taxAmount = taxAmount;
+    }
+
     public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public String getCurrency() {

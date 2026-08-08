@@ -17,8 +17,12 @@ public final class OrderMapper {
         return new OrderResponse(
                 order.getId(),
                 order.getStatus(),
+                order.getSubtotal() != null ? order.getSubtotal() : order.getTotalAmount(),
+                order.getDiscountAmount(),
+                order.getTaxAmount(),
                 order.getTotalAmount(),
                 order.getCurrency(),
+                order.getCouponCode(),
                 items.stream().map(OrderMapper::toItemResponse).toList(),
                 order.getCreatedAt(),
                 order.getUpdatedAt()
