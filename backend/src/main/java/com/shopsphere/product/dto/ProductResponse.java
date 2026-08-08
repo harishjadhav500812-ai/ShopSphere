@@ -9,7 +9,12 @@ public record ProductResponse(
         String slug,
         String description,
         BigDecimal price,
+        String priceCurrency,
+        String sku,
+        Integer stock,
+        boolean active,
         Long sellerId,
+        Long categoryId,
         Instant createdAt,
         Instant updatedAt
 ) {

@@ -3,11 +3,16 @@ package com.shopsphere.product.domain;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import com.shopsphere.category.domain.Category;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -47,6 +52,10 @@ public class Product {
     @Column(name = "seller_id", nullable = false)
     private Long sellerId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -56,15 +65,17 @@ public class Product {
     public Product() {
     }
 
-    public Product(String name, String slug, String description, BigDecimal price, Long sellerId) {
+    public Product(String name, String slug, String description, BigDecimal price, String priceCurrency, String sku, Integer stock, Long sellerId, Category category) {
         this.name = name;
         this.slug = slug;
         this.description = description;
         this.price = price;
+        this.priceCurrency = priceCurrency;
+        this.sku = sku;
+        this.stock = stock;
         this.sellerId = sellerId;
+        this.category = category;
         this.active = true;
-        this.stock = 0;
-        this.priceCurrency = "USD";
     }
 
     public Long getId() {
@@ -147,6 +158,14 @@ public class Product {
         this.sellerId = sellerId;
     }
 
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -160,8 +179,8 @@ public class Product {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
-        if (this.active == false || this.stock == null) {
-            // already set in constructor
+        if (this.stock == null) {
+            this.stock = 0;
         }
         if (this.priceCurrency == null) {
             this.priceCurrency = "USD";

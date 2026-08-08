@@ -14,7 +14,12 @@ public final class ProductMapper {
                 p.getSlug(),
                 p.getDescription(),
                 p.getPrice(),
+                p.getPriceCurrency(),
+                p.getSku(),
+                p.getStock(),
+                p.isActive(),
                 p.getSellerId(),
+                p.getCategory().getId(),
                 p.getCreatedAt(),
                 p.getUpdatedAt()
         );

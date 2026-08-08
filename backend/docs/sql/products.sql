@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS products (
   stock INTEGER NOT NULL DEFAULT 0,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   seller_id BIGINT NOT NULL,
+  category_id BIGINT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
@@ -17,6 +18,11 @@ CREATE TABLE IF NOT EXISTS products (
 ALTER TABLE IF EXISTS products
   ADD CONSTRAINT fk_products_seller FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE RESTRICT;
 
+ALTER TABLE IF EXISTS products
+  ADD CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT;
+
 CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_products_sku ON products(sku) WHERE sku IS NOT NULL;

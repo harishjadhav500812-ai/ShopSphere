@@ -69,6 +69,9 @@ public class CartService {
         if (!product.isActive()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not available");
         }
+        if (request.quantity() > product.getStock()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity exceeds available stock");
+        }
 
         Cart cart = cartRepository.findByUserIdAndActiveTrue(userId).orElseGet(() -> cartRepository.save(new Cart(userId)));
 
@@ -79,6 +82,9 @@ public class CartService {
             int newQty = item.getQuantity() + request.quantity();
             if (newQty > MAX_QUANTITY) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity exceeds maximum");
+            }
+            if (newQty > product.getStock()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity exceeds available stock");
             }
             item.setQuantity(newQty);
             item.setPriceAmountSnapshot(product.getPriceAmount());
@@ -110,6 +116,9 @@ public class CartService {
         Product product = productRepository.findById(item.getProductId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
         if (!product.isActive()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not available");
+        }
+        if (request.quantity() > product.getStock()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity exceeds available stock");
         }
 
         item.setQuantity(request.quantity());

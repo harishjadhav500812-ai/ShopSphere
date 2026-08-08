@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-public record CreateProductRequest(
+public record UpdateProductRequest(
         @NotBlank(message = "name is required")
         @Size(max = 200, message = "name must be at most 200 characters")
         String name,
