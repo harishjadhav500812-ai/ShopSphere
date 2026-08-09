@@ -352,3 +352,40 @@ export interface TrackingResponse {
   deliveredAt?: string;
   shippingAddress: ShippingAddressDto;
 }
+
+// Saved delivery addresses ("address book") — backend module: /api/addresses
+export interface Address {
+  id: number;
+  label?: string;
+  recipientName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAddressRequest {
+  label?: string;
+  recipientName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+}
+
+export type UpdateAddressRequest = CreateAddressRequest;
+
+// Payment method — presentational only today (backend uses a single simulated
+// processor for every order); kept as its own type so a real gateway integration
+// can be wired in later without reshaping the checkout UI.
+export type PaymentMethod = 'CARD' | 'UPI' | 'NET_BANKING' | 'WALLET' | 'COD';

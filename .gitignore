@@ -90,3 +90,11 @@ jacoco.exec
 # Docker (local overrides)
 # =========================
 docker-compose.override.yml
+
+# =========================
+# Local dev launcher scripts (contain secrets — never commit)
+# =========================
+backend/run-backend.bat
+frontend/run-frontend.bat
+backend-run.log
+frontend-run.log

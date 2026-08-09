@@ -7,8 +7,9 @@ import type { Order, Payment, Shipping, ShippingAddressDto } from '../types';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Input } from '../components/ui/Input';
+import { OrderStatusTimeline } from '../components/order/OrderStatusTimeline';
 import { formatMoney, formatDateTime } from '../utils/format';
-import { ArrowLeft, CreditCard, PackageCheck, Truck } from 'lucide-react';
+import { ArrowLeft, CreditCard, PackageCheck, Truck, Navigation } from 'lucide-react';
 
 const emptyAddress: ShippingAddressDto = {
   recipientName: '',
@@ -138,6 +139,14 @@ export const OrderDetailPage: React.FC = () => {
           {successMessage}
         </div>
       )}
+
+      {/* Order Tracking */}
+      <div style={{ background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '14px', padding: '1.5rem' }}>
+        <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.125rem', fontWeight: 800, color: '#111827', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Navigation size={18} /> Order Tracking
+        </h2>
+        <OrderStatusTimeline orderStatus={order.status} shippingStatus={shipping?.shippingStatus} />
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
         {/* Items */}

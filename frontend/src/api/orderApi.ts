@@ -35,6 +35,10 @@ export const orderApi = {
     return apiClient.get<Order>(`/api/seller/orders/${id}`);
   },
 
+  updateOrderStatusBySeller(id: number, status: OrderStatus): Promise<Order> {
+    return apiClient.patch<Order>(`/api/seller/orders/${id}/status`, { status });
+  },
+
   // Admin
   getAdminOrders(params?: { page?: number; size?: number }): Promise<Page<Order>> {
     const query = new URLSearchParams();

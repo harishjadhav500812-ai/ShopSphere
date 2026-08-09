@@ -299,6 +299,42 @@ public class OrderService {
         return OrderMapper.toResponse(order, items);
     }
 
+    /**
+     * Sellers may only advance an order through their portion of the fulfillment lifecycle
+     * (CONFIRMED / PROCESSING / SHIPPED). DELIVERED and CANCELLED remain controlled by the
+     * customer (cancel) or admin/system (delivery confirmation), enforced server-side here
+     * regardless of what the frontend sends.
+     */
+    private static final java.util.Set<OrderStatus> SELLER_ALLOWED_TARGET_STATUSES =
+            java.util.Set.of(OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED);
+
+    @Transactional
+    public OrderResponse updateOrderStatusBySeller(Long orderId, Long sellerId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        List<OrderItem> sellerItems = orderItemRepository.findByOrderIdAndSellerId(orderId, sellerId);
+        if (sellerItems.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+
+        if (!SELLER_ALLOWED_TARGET_STATUSES.contains(newStatus)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sellers may only set status to CONFIRMED, PROCESSING, or SHIPPED");
+        }
+        if (!order.getStatus().canTransitionTo(newStatus)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid order status transition from " + order.getStatus() + " to " + newStatus);
+        }
+
+        List<OrderItem> allItems = orderItemRepository.findByOrderId(orderId);
+        if (order.getStatus() == OrderStatus.PENDING && newStatus == OrderStatus.CONFIRMED) {
+            lockAndDeductStock(allItems);
+        }
+
+        order.setStatus(newStatus);
+        Order savedOrder = orderRepository.save(order);
+        return OrderMapper.toResponse(savedOrder, sellerItems);
+    }
+
     private Page<OrderResponse> mapOrderPage(Page<Order> orderPage, Pageable pageable, Long sellerIdFilter) {
         List<Order> orders = orderPage.getContent();
         if (orders.isEmpty()) {

@@ -16,6 +16,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { PaymentPage } from './pages/PaymentPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
 import { WishlistPage } from './pages/WishlistPage';
 import { SellerDashboardPage } from './pages/seller/SellerDashboardPage';
 import { SellerProductsPage } from './pages/seller/SellerProductsPage';
@@ -83,6 +84,14 @@ export function App() {
                 element={
                   <RoleGuard allowedRoles="CUSTOMER">
                     <OrdersPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/orders/:id/confirmation"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <OrderConfirmationPage />
                   </RoleGuard>
                 }
               />
