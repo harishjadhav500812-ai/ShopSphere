@@ -25,6 +25,8 @@ public record UpdateProductRequest(
         @PositiveOrZero(message = "stock must be positive or zero")
         Integer stock,
         @NotNull(message = "categoryId is required")
-        Long categoryId
+        Long categoryId,
+        @Size(max = 1024, message = "imageUrl must be at most 1024 characters")
+        String imageUrl
 ) {
 }

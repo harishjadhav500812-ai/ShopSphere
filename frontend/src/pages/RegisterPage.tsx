@@ -21,11 +21,19 @@ export const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !password) { setErrorMessage('Please fill in all fields.'); return; }
-    if (password.length < 6) { setErrorMessage('Password must be at least 6 characters.'); return; }
+    if (password.length < 8 || password.length > 72) { setErrorMessage('Password must be between 8 and 72 characters.'); return; }
     setIsLoading(true);
     setErrorMessage('');
     try {
-      await register({ fullName, email, password, role });
+      const result = await register({ fullName, email, password, role });
+      if (result.verificationRequired) {
+        // Hand the user straight over to the email verification step
+        navigate('/verify-email', {
+          replace: true,
+          state: { email: result.user.email, devCode: result.devVerificationCode ?? null },
+        });
+        return;
+      }
       setSuccessMessage('Account created successfully! Redirecting...');
       setTimeout(() => navigate('/login'), 1500);
     } catch (err: unknown) {
@@ -102,7 +110,7 @@ export const RegisterPage: React.FC = () => {
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.375rem' }}>Password</label>
                 <div style={{ position: 'relative' }}>
-                  <input type={showPassword ? 'text' : 'password'} placeholder="At least 6 characters" value={password} onChange={e => setPassword(e.target.value)} required className="input-field" style={{ paddingRight: '2.75rem' }} />
+                  <input type={showPassword ? 'text' : 'password'} placeholder="At least 8 characters" value={password} onChange={e => setPassword(e.target.value)} required className="input-field" style={{ paddingRight: '2.75rem' }} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '0.25rem', display: 'flex', alignItems: 'center' }}>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>

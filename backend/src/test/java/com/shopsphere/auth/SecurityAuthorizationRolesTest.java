@@ -183,7 +183,7 @@ class SecurityAuthorizationRolesTest {
                 "secret-pass",
                 role.name() + " User",
                 role
-        ));
+        )).user();
     }
 
     private User persistAdmin() {

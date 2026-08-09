@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/Button';
+import { formatMoney } from '../../utils/format';
 import { ShieldCheck, Lock, RotateCcw, ArrowRight, Tag } from 'lucide-react';
 
 interface CartSummaryProps {
@@ -7,11 +8,12 @@ interface CartSummaryProps {
   discount: number;
   tax: number;
   total: number;
+  currency?: string;
   onProceedToCheckout: () => void;
   isLoading?: boolean;
 }
 
-export const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, discount, tax, total, onProceedToCheckout, isLoading = false }) => {
+export const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, discount, tax, total, currency, onProceedToCheckout, isLoading = false }) => {
   return (
     <div style={{ background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', position: 'sticky', top: '5rem' }}>
 
@@ -26,17 +28,17 @@ export const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, discount, ta
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', fontSize: '0.875rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#6b7280' }}>Subtotal (items)</span>
-            <span style={{ fontWeight: 600, color: '#111827' }}>₹{subtotal.toLocaleString()}</span>
+            <span style={{ fontWeight: 600, color: '#111827' }}>{formatMoney(subtotal, currency)}</span>
           </div>
           {discount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669', fontWeight: 600 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Tag size={13} /> Discount Applied</span>
-              <span>−₹{discount.toLocaleString()}</span>
+              <span>−{formatMoney(discount, currency)}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#6b7280' }}>GST & Taxes (est.)</span>
-            <span style={{ fontWeight: 600, color: '#111827' }}>₹{tax.toLocaleString()}</span>
+            <span style={{ fontWeight: 600, color: '#111827' }}>{formatMoney(tax, currency)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: '#6b7280' }}>Delivery</span>
@@ -47,7 +49,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, discount, ta
         {/* Savings badge */}
         {discount > 0 && (
           <div style={{ background: '#f0fdfa', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '0.625rem 0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: '#065f46', fontWeight: 700 }}>
-            <Tag size={14} /> You're saving ₹{discount.toLocaleString()} on this order!
+            <Tag size={14} /> You're saving {formatMoney(discount, currency)} on this order!
           </div>
         )}
 
@@ -58,7 +60,7 @@ export const CartSummary: React.FC<CartSummaryProps> = ({ subtotal, discount, ta
             <div style={{ fontSize: '0.72rem', color: '#9ca3af', marginTop: '0.1rem' }}>Inclusive of all taxes</div>
           </div>
           <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.625rem', fontWeight: 900, color: '#0d9488' }}>
-            ₹{total.toLocaleString()}
+            {formatMoney(total, currency)}
           </div>
         </div>
 

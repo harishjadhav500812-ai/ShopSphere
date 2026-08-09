@@ -36,7 +36,7 @@ class UserServiceTest {
                 "secret-pass",
                 "Seller One",
                 Role.SELLER
-        ));
+        )).user();
 
         assertThat(response.id()).isNotNull();
         assertThat(response.email()).isEqualTo("seller@shopsphere.test");
@@ -87,7 +87,7 @@ class UserServiceTest {
                 "secret-pass",
                 "Reader User",
                 Role.CUSTOMER
-        ));
+        )).user();
 
         UserResponse found = userService.getById(created.id());
 

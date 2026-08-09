@@ -8,23 +8,31 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.shopsphere.user.domain.Role;
 import com.shopsphere.user.domain.User;
+import com.shopsphere.user.dto.RegisterResponse;
 import com.shopsphere.user.dto.RegisterUserRequest;
 import com.shopsphere.user.dto.UserResponse;
 import com.shopsphere.user.repository.UserRepository;
+import com.shopsphere.verification.service.EmailVerificationService;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            EmailVerificationService emailVerificationService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
-    public UserResponse register(RegisterUserRequest request) {
+    public RegisterResponse register(RegisterUserRequest request) {
         Role role = request.role();
         if (role == Role.ADMIN) {
             throw new ResponseStatusException(
@@ -45,7 +53,13 @@ public class UserService {
                 role
         );
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        boolean verificationRequired = emailVerificationService.isVerificationRequired();
+        String devCode = verificationRequired ? emailVerificationService.issueCodeForClient(saved) : null;
+        boolean mailConfigured = emailVerificationService.isMailConfigured();
+
+        return new RegisterResponse(toResponse(saved), verificationRequired, mailConfigured, devCode);
     }
 
     @Transactional(readOnly = true)

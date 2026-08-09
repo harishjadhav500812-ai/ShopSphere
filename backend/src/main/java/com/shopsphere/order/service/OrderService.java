@@ -276,9 +276,27 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public OrderResponse getOrderForAdmin(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        return OrderMapper.toResponse(order, orderItemRepository.findByOrderId(order.getId()));
+    }
+
+    @Transactional(readOnly = true)
     public Page<OrderResponse> getSellerOrders(Long sellerId, Pageable pageable) {
         Page<Order> orderPage = orderRepository.findBySellerId(sellerId, pageable);
         return mapOrderPage(orderPage, pageable, sellerId);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getSellerOrderById(Long id, Long sellerId) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+        List<OrderItem> items = orderItemRepository.findByOrderIdAndSellerId(order.getId(), sellerId);
+        if (items.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
+        }
+        return OrderMapper.toResponse(order, items);
     }
 
     private Page<OrderResponse> mapOrderPage(Page<Order> orderPage, Pageable pageable, Long sellerIdFilter) {

@@ -73,7 +73,8 @@ class CartControllerTest {
                 "USD",
                 "CART-SKU-" + UUID.randomUUID(),
                 5,
-                categoryId()
+                categoryId(),
+                null
         );
         String body = objectMapper.writeValueAsString(req);
 

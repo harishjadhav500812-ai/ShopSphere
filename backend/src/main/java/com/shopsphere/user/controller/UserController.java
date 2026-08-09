@@ -2,6 +2,8 @@ package com.shopsphere.user.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.shopsphere.user.dto.RegisterResponse;
 import com.shopsphere.user.dto.RegisterUserRequest;
 import com.shopsphere.user.dto.UserResponse;
 import com.shopsphere.user.service.UserService;
@@ -28,8 +31,15 @@ public class UserController {
 
     @PostMapping(path = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse register(@Valid @RequestBody RegisterUserRequest request) {
+    public RegisterResponse register(@Valid @RequestBody RegisterUserRequest request) {
         return userService.register(request);
+    }
+
+    @GetMapping(path = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    public UserResponse me(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        Number uid = jwt.getClaim("userId");
+        return userService.getById(uid.longValue());
     }
 
     @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

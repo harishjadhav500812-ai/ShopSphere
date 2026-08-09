@@ -70,11 +70,11 @@ class ProductControllerTest {
     }
 
     private CreateProductRequest createRequest(String name, Long categoryId) {
-        return new CreateProductRequest(name, "Description", new BigDecimal("19.99"), "USD", "SKU-" + UUID.randomUUID(), 10, categoryId);
+        return new CreateProductRequest(name, "Description", new BigDecimal("19.99"), "USD", "SKU-" + UUID.randomUUID(), 10, categoryId, null);
     }
 
     private UpdateProductRequest updateRequest(String name, Long categoryId) {
-        return new UpdateProductRequest(name, "Updated description", new BigDecimal("29.99"), "USD", "SKU-" + UUID.randomUUID(), 12, categoryId);
+        return new UpdateProductRequest(name, "Updated description", new BigDecimal("29.99"), "USD", "SKU-" + UUID.randomUUID(), 12, categoryId, null);
     }
 
     private long createProduct(String token, String name, Long categoryId) throws Exception {
@@ -137,7 +137,7 @@ class ProductControllerTest {
 
     @Test
     void validationRejectsBlankName() throws Exception {
-        var req = new CreateProductRequest("  ", "desc", new BigDecimal("3.00"), "USD", null, 1, categoryId());
+        var req = new CreateProductRequest("  ", "desc", new BigDecimal("3.00"), "USD", null, 1, categoryId(), null);
         String body = objectMapper.writeValueAsString(req);
         mockMvc.perform(post("/api/products").contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + sellerToken())

@@ -77,7 +77,7 @@ class AuthSecurityIntegrationTest {
                 registeredPassword,
                 "Auth User",
                 Role.CUSTOMER
-        ));
+        )).user();
     }
 
     @Test
@@ -127,7 +127,7 @@ class AuthSecurityIntegrationTest {
                                 }
                                 """.formatted(UUID.randomUUID())))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.role").value("SELLER"));
+                .andExpect(jsonPath("$.user.role").value("SELLER"));
     }
 
     @Test

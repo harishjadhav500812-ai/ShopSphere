@@ -4,30 +4,29 @@ import { Layout } from './components/layout/Layout';
 import { Button } from './components/ui/Button';
 import { Card } from './components/ui/Card';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { CartPage } from './pages/CartPage';
-
-const CustomerOrdersPlaceholder = () => (
-  <Card title="My Orders" subtitle="Track and manage your purchases">
-    <p style={{ color: '#64748b' }}>Order history list connected to orderApi service.</p>
-  </Card>
-);
-
-const SellerDashboardPlaceholder = () => (
-  <Card title="Seller Workspace" subtitle="Manage your products and vendor orders">
-    <p style={{ color: '#64748b' }}>Vendor stats and product management view.</p>
-  </Card>
-);
-
-const AdminDashboardPlaceholder = () => (
-  <Card title="Admin Workspace" subtitle="Platform administration and analytics">
-    <p style={{ color: '#64748b' }}>System management view (Categories, Orders, Coupons, Shipping).</p>
-  </Card>
-);
+import { CheckoutPage } from './pages/CheckoutPage';
+import { PaymentPage } from './pages/PaymentPage';
+import { OrdersPage } from './pages/OrdersPage';
+import { OrderDetailPage } from './pages/OrderDetailPage';
+import { WishlistPage } from './pages/WishlistPage';
+import { SellerDashboardPage } from './pages/seller/SellerDashboardPage';
+import { SellerProductsPage } from './pages/seller/SellerProductsPage';
+import { SellerProductFormPage } from './pages/seller/SellerProductFormPage';
+import { SellerOrdersPage } from './pages/seller/SellerOrdersPage';
+import { SellerOrderDetailPage } from './pages/seller/SellerOrderDetailPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
+import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
+import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage';
+import { AdminCouponsPage } from './pages/admin/AdminCouponsPage';
 
 const Forbidden = () => (
   <Card title="403 — Access Forbidden" subtitle="Insufficient Role Permissions">
@@ -49,51 +48,158 @@ export function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Layout>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<CatalogPage />} />
-            <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/unauthorized" element={<Forbidden />} />
+        <CartProvider>
+          <Layout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<CatalogPage />} />
+              <Route path="/products/:id" element={<ProductDetailPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/unauthorized" element={<Forbidden />} />
 
-            {/* Customer Protected Routes */}
-            <Route
-              path="/orders"
-              element={
-                <RoleGuard allowedRoles="CUSTOMER">
-                  <CustomerOrdersPlaceholder />
-                </RoleGuard>
-              }
-            />
+              {/* Customer Protected Routes */}
+              <Route
+                path="/checkout"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <CheckoutPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/checkout/payment/:orderId"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <PaymentPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <OrdersPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/orders/:id"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <OrderDetailPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/wishlist"
+                element={
+                  <RoleGuard allowedRoles="CUSTOMER">
+                    <WishlistPage />
+                  </RoleGuard>
+                }
+              />
 
-            {/* Seller Protected Routes */}
-            <Route
-              path="/seller"
-              element={
-                <RoleGuard allowedRoles="SELLER">
-                  <SellerDashboardPlaceholder />
-                </RoleGuard>
-              }
-            />
+              {/* Seller Protected Routes */}
+              <Route
+                path="/seller"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerDashboardPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/seller/products"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerProductsPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/seller/products/new"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerProductFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/seller/products/:id/edit"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerProductFormPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/seller/orders"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerOrdersPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/seller/orders/:id"
+                element={
+                  <RoleGuard allowedRoles="SELLER">
+                    <SellerOrderDetailPage />
+                  </RoleGuard>
+                }
+              />
 
-            {/* Admin Protected Routes */}
-            <Route
-              path="/admin"
-              element={
-                <RoleGuard allowedRoles="ADMIN">
-                  <AdminDashboardPlaceholder />
-                </RoleGuard>
-              }
-            />
+              {/* Admin Protected Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <RoleGuard allowedRoles="ADMIN">
+                    <AdminDashboardPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/categories"
+                element={
+                  <RoleGuard allowedRoles="ADMIN">
+                    <AdminCategoriesPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/orders"
+                element={
+                  <RoleGuard allowedRoles="ADMIN">
+                    <AdminOrdersPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/orders/:id"
+                element={
+                  <RoleGuard allowedRoles="ADMIN">
+                    <AdminOrderDetailPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/admin/coupons"
+                element={
+                  <RoleGuard allowedRoles="ADMIN">
+                    <AdminCouponsPage />
+                  </RoleGuard>
+                }
+              />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </CartProvider>
       </AuthProvider>
     </BrowserRouter>
   );

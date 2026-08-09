@@ -1,4 +1,4 @@
-// Common Types & API Responses
+// Common Types & API Responses — aligned with backend DTOs
 export type UserRole = 'CUSTOMER' | 'SELLER' | 'ADMIN';
 
 export interface User {
@@ -9,12 +9,12 @@ export interface User {
   createdAt?: string;
 }
 
-export interface AuthTokenResponse {
-  token: string;
-  type: string;
-  userId: number;
-  email: string;
-  role: UserRole;
+// POST /api/auth/login response
+export interface LoginResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  user: User;
 }
 
 export interface LoginRequest {
@@ -27,6 +27,27 @@ export interface RegisterRequest {
   email: string;
   password: string;
   role: UserRole;
+}
+
+// POST /api/users/register response
+export interface RegisterResponse {
+  user: User;
+  verificationRequired: boolean;
+  mailConfigured: boolean;
+  devVerificationCode?: string | null;
+}
+
+// POST /api/auth/verify-email
+export interface VerifyEmailRequest {
+  email: string;
+  code: string;
+}
+
+// POST /api/auth/resend-verification response
+export interface ResendVerificationResponse {
+  email: string;
+  mailConfigured: boolean;
+  devVerificationCode?: string | null;
 }
 
 export interface FieldErrorDetail {
@@ -61,13 +82,19 @@ export interface Category {
   slug: string;
   description?: string;
   parentId?: number;
-  children?: Category[];
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface CreateCategoryRequest {
   name: string;
+  slug?: string;
+  description?: string;
+  parentId?: number;
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
   slug?: string;
   description?: string;
   parentId?: number;
@@ -80,56 +107,68 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
-  currency: string;
+  priceCurrency: string;
   sku: string;
   stock: number;
+  active: boolean;
   sellerId: number;
   categoryId: number;
-  categoryName?: string;
+  imageUrl?: string;
+  averageRating?: number;
+  reviewCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface CreateProductRequest {
   name: string;
-  description: string;
+  description?: string;
   price: number;
-  currency?: string;
-  sku: string;
+  priceCurrency: string;
+  sku?: string;
   stock: number;
   categoryId: number;
+  imageUrl?: string;
 }
 
 export interface UpdateProductRequest {
   name?: string;
   description?: string;
   price?: number;
-  currency?: string;
+  priceCurrency?: string;
   sku?: string;
   stock?: number;
   categoryId?: number;
+  imageUrl?: string;
+}
+
+export interface UpdateProductStatusRequest {
+  active: boolean;
+}
+
+export interface UpdateStockRequest {
+  quantity: number;
 }
 
 // Cart
 export interface CartItem {
-  id: number;
+  itemId: number;
   productId: number;
-  productName: string;
   sku: string;
-  unitPrice: number;
-  currency: string;
+  productName: string;
+  priceAmount: number;
+  priceCurrency: string;
   quantity: number;
-  subtotal: number;
+  available: boolean;
 }
 
 export interface Cart {
-  id: number;
-  userId: number;
+  cartId: number | null;
   items: CartItem[];
+  totals: Record<string, number>;
   itemCount: number;
-  totalAmount: number;
-  currency: string;
-  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AddToCartRequest {
@@ -141,23 +180,61 @@ export interface UpdateCartItemRequest {
   quantity: number;
 }
 
+// Wishlist
+export interface WishlistItem {
+  itemId: number;
+  productId: number;
+  productName: string;
+  priceAmount: number;
+  priceCurrency: string;
+  available: boolean;
+  addedAt: string;
+}
+
+export interface Wishlist {
+  wishlistId: number | null;
+  itemCount: number;
+  items: WishlistItem[];
+}
+
+export interface AddWishlistItemRequest {
+  productId: number;
+}
+
+// Reviews
+export interface Review {
+  id: number;
+  productId: number;
+  userId: number;
+  userFullName: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateReviewRequest {
+  rating: number;
+  comment?: string;
+}
+
 // Order & Pricing
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 
 export interface OrderItem {
   id: number;
   productId: number;
-  productName: string;
-  sku: string;
-  unitPrice: number;
-  quantity: number;
-  subtotal: number;
   sellerId: number;
+  sku: string;
+  productName: string;
+  unitPriceAmount: number;
+  priceCurrency: string;
+  quantity: number;
+  lineTotal: number;
 }
 
 export interface Order {
   id: number;
-  userId: number;
   status: OrderStatus;
   subtotal: number;
   discountAmount: number;
@@ -176,7 +253,6 @@ export interface CreateOrderRequest {
 
 // Payment
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
-export type PaymentProvider = 'SIMULATED';
 
 export interface Payment {
   id: number;
@@ -184,7 +260,7 @@ export interface Payment {
   amount: number;
   currency: string;
   status: PaymentStatus;
-  provider: PaymentProvider;
+  provider: string;
   transactionId?: string;
   createdAt: string;
   updatedAt: string;

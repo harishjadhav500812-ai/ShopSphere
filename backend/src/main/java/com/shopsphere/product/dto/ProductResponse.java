@@ -15,6 +15,9 @@ public record ProductResponse(
         boolean active,
         Long sellerId,
         Long categoryId,
+        String imageUrl,
+        Double averageRating,
+        Integer reviewCount,
         Instant createdAt,
         Instant updatedAt
 ) {

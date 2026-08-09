@@ -34,10 +34,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   });
 
-  if (response.status === 24) {
-    return {} as T;
-  }
-
   const contentType = response.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
 

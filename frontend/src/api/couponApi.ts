@@ -1,13 +1,10 @@
 import { apiClient } from './client';
-import type { Coupon, CreateCouponRequest, Page, UpdateCouponRequest } from '../types';
+import type { Coupon, CreateCouponRequest, UpdateCouponRequest } from '../types';
 
 export const couponApi = {
-  getAdminCoupons(params?: { page?: number; size?: number }): Promise<Page<Coupon>> {
-    const query = new URLSearchParams();
-    if (params?.page !== undefined) query.append('page', params.page.toString());
-    if (params?.size !== undefined) query.append('size', params.size.toString());
-    const queryString = query.toString() ? `?${query.toString()}` : '';
-    return apiClient.get<Page<Coupon>>(`/api/admin/coupons${queryString}`);
+  /** GET /api/admin/coupons returns a plain list from the backend. */
+  getAdminCoupons(): Promise<Coupon[]> {
+    return apiClient.get<Coupon[]>('/api/admin/coupons');
   },
 
   getAdminCouponById(id: number): Promise<Coupon> {

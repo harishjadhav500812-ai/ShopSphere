@@ -51,6 +51,12 @@ public class AdminOrderController {
         return orderService.getAllOrdersForAdmin(pageable);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public OrderResponse getOrderById(@PathVariable Long id) {
+        return orderService.getOrderForAdmin(id);
+    }
+
     @PatchMapping(path = "/{id}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public OrderResponse updateStatus(

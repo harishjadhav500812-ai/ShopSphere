@@ -48,9 +48,10 @@ export const CatalogPage: React.FC = () => {
       .getProducts({
         categoryId,
         search: searchQuery || undefined,
+        activeOnly: true,
       })
-      .then((res) => {
-        setRawProducts(res.content || []);
+      .then((products) => {
+        setRawProducts(products);
       })
       .catch(() => {
         setIsError(true);
@@ -277,7 +278,11 @@ export const CatalogPage: React.FC = () => {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 230px), 1fr))', gap: '1.25rem' }}>
                 {paginatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    categoryName={categories.find((c) => c.id === product.categoryId)?.name}
+                  />
                 ))}
               </div>
 

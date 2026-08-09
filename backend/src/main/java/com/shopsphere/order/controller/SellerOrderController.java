@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,5 +39,11 @@ public class SellerOrderController {
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return orderService.getSellerOrders(currentSellerId(authentication), pageable);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SELLER')")
+    public OrderResponse getSellerOrderById(@PathVariable Long id, Authentication authentication) {
+        return orderService.getSellerOrderById(id, currentSellerId(authentication));
     }
 }

@@ -1,20 +1,21 @@
 import React from 'react';
 import { Button } from '../ui/Button';
+import { formatMoney } from '../../utils/format';
 import { ArrowRight } from 'lucide-react';
 
 interface MobileCheckoutBarProps {
   total: number;
+  currency?: string;
   onProceedToCheckout: () => void;
   isLoading?: boolean;
 }
 
 export const MobileCheckoutBar: React.FC<MobileCheckoutBarProps> = ({
   total,
+  currency,
   onProceedToCheckout,
   isLoading = false,
 }) => {
-  const currencySymbol = '₹';
-
   return (
     <div
       className="mobile-only"
@@ -36,7 +37,7 @@ export const MobileCheckoutBar: React.FC<MobileCheckoutBarProps> = ({
       <div>
         <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600 }}>Total Payable</span>
         <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', fontWeight: 900, color: '#0d9488' }}>
-          {currencySymbol}{total.toLocaleString()}
+          {formatMoney(total, currency)}
         </div>
       </div>
 

@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.shopsphere.common.exception.GlobalExceptionHandler;
 import com.shopsphere.user.domain.Role;
+import com.shopsphere.user.dto.RegisterResponse;
 import com.shopsphere.user.dto.RegisterUserRequest;
 import com.shopsphere.user.dto.UserResponse;
 import com.shopsphere.user.service.UserService;
@@ -41,7 +42,12 @@ class UserControllerTest {
     @Test
     void registerReturnsCreatedUser() throws Exception {
         when(userService.register(any(RegisterUserRequest.class))).thenReturn(
-                new UserResponse(1L, "customer@shopsphere.test", "Customer One", Role.CUSTOMER, Instant.parse("2026-01-01T00:00:00Z"))
+                new RegisterResponse(
+                        new UserResponse(1L, "customer@shopsphere.test", "Customer One", Role.CUSTOMER, Instant.parse("2026-01-01T00:00:00Z")),
+                        true,
+                        false,
+                        "123456"
+                )
         );
 
         mockMvc.perform(post("/api/users/register")
@@ -55,12 +61,14 @@ class UserControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.email").value("customer@shopsphere.test"))
-                .andExpect(jsonPath("$.fullName").value("Customer One"))
-                .andExpect(jsonPath("$.role").value("CUSTOMER"))
-                .andExpect(jsonPath("$.password").doesNotExist())
-                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+                .andExpect(jsonPath("$.user.id").value(1))
+                .andExpect(jsonPath("$.user.email").value("customer@shopsphere.test"))
+                .andExpect(jsonPath("$.user.fullName").value("Customer One"))
+                .andExpect(jsonPath("$.user.role").value("CUSTOMER"))
+                .andExpect(jsonPath("$.verificationRequired").value(true))
+                .andExpect(jsonPath("$.devVerificationCode").value("123456"))
+                .andExpect(jsonPath("$.user.password").doesNotExist())
+                .andExpect(jsonPath("$.user.passwordHash").doesNotExist());
     }
 
     @Test

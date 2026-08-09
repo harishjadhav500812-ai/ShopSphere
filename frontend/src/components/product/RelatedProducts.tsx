@@ -13,9 +13,9 @@ export const RelatedProducts: React.FC<RelatedProductsProps> = ({ categoryId, cu
 
   useEffect(() => {
     productApi
-      .getProducts({ categoryId })
-      .then((res) => {
-        const filtered = (res.content || []).filter((p) => p.id !== currentProductId);
+      .getProducts({ categoryId, activeOnly: true })
+      .then((products) => {
+        const filtered = products.filter((p) => p.id !== currentProductId);
         setProducts(filtered.slice(0, 4));
       })
       .catch(() => setProducts([]));

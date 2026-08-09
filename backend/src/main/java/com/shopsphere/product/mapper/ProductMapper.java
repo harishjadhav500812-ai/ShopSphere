@@ -7,7 +7,7 @@ public final class ProductMapper {
 
     private ProductMapper() {}
 
-    public static ProductResponse toResponse(Product p) {
+    public static ProductResponse toResponse(Product p, Double averageRating, Integer reviewCount) {
         return new ProductResponse(
                 p.getId(),
                 p.getName(),
@@ -20,6 +20,9 @@ public final class ProductMapper {
                 p.isActive(),
                 p.getSellerId(),
                 p.getCategory().getId(),
+                p.getImageUrl(),
+                averageRating,
+                reviewCount,
                 p.getCreatedAt(),
                 p.getUpdatedAt()
         );

@@ -1,13 +1,29 @@
 import { apiClient } from './client';
-import type { AuthTokenResponse, LoginRequest, RegisterRequest, User } from '../types';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  ResendVerificationResponse,
+  User,
+  VerifyEmailRequest,
+} from '../types';
 
 export const authApi = {
-  login(request: LoginRequest): Promise<AuthTokenResponse> {
-    return apiClient.post<AuthTokenResponse>('/api/auth/login', request);
+  login(request: LoginRequest): Promise<LoginResponse> {
+    return apiClient.post<LoginResponse>('/api/auth/login', request);
   },
 
-  register(request: RegisterRequest): Promise<User> {
-    return apiClient.post<User>('/api/users/register', request);
+  register(request: RegisterRequest): Promise<RegisterResponse> {
+    return apiClient.post<RegisterResponse>('/api/users/register', request);
+  },
+
+  verifyEmail(request: VerifyEmailRequest): Promise<User> {
+    return apiClient.post<User>('/api/auth/verify-email', request);
+  },
+
+  resendVerification(email: string): Promise<ResendVerificationResponse> {
+    return apiClient.post<ResendVerificationResponse>('/api/auth/resend-verification', { email });
   },
 
   getCurrentUser(): Promise<User> {

@@ -2,6 +2,7 @@ package com.shopsphere.product.service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.springframework.http.HttpStatus;
@@ -17,25 +18,30 @@ import com.shopsphere.product.dto.ProductResponse;
 import com.shopsphere.product.dto.UpdateProductRequest;
 import com.shopsphere.product.mapper.ProductMapper;
 import com.shopsphere.product.repository.ProductRepository;
+import com.shopsphere.review.service.ReviewService;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewService reviewService;
 
     private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9\\-]");
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ReviewService reviewService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.reviewService = reviewService;
     }
 
     @Transactional(readOnly = true)
     public List<ProductResponse> listAll() {
-        return productRepository.findAll()
-                .stream()
-                .map(ProductMapper::toResponse)
+        List<Product> products = productRepository.findAll();
+        List<Long> productIds = products.stream().map(Product::getId).toList();
+        Map<Long, ReviewService.ReviewSummary> summaries = reviewService.summariesForProducts(productIds);
+        return products.stream()
+                .map(p -> toResponseWithSummary(p, summaries.get(p.getId())))
                 .toList();
     }
 
@@ -43,7 +49,7 @@ public class ProductService {
     public ProductResponse getById(Long id) {
         Product p = productRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
-        return ProductMapper.toResponse(p);
+        return toResponseWithSummary(p, reviewService.summariesForProducts(List.of(id)).get(id));
     }
 
     @Transactional
@@ -71,8 +77,9 @@ public class ProductService {
                 sellerId,
                 category
         );
+        product.setImageUrl(normalizeOptional(request.imageUrl()));
         Product saved = productRepository.save(product);
-        return ProductMapper.toResponse(saved);
+        return toResponseWithSummary(saved, null);
     }
 
     @Transactional
@@ -97,16 +104,17 @@ public class ProductService {
         product.setPriceCurrency(normalizeCurrency(request.priceCurrency()));
         product.setSku(sku);
         product.setStock(request.stock());
+        product.setImageUrl(normalizeOptional(request.imageUrl()));
         product.setCategory(findCategory(request.categoryId()));
 
-        return ProductMapper.toResponse(productRepository.save(product));
+        return toResponseWithSummary(productRepository.save(product), null);
     }
 
     @Transactional
     public ProductResponse updateStatus(Long id, boolean active, Long actorUserId, boolean admin) {
         Product product = findProductForWrite(id, actorUserId, admin);
         product.setActive(active);
-        return ProductMapper.toResponse(productRepository.save(product));
+        return toResponseWithSummary(productRepository.save(product), null);
     }
 
     @Transactional
@@ -120,7 +128,17 @@ public class ProductService {
     public ProductResponse updateStock(Long id, Integer quantity, Long actorUserId, boolean admin) {
         Product product = findProductForWrite(id, actorUserId, admin);
         product.setStock(quantity);
-        return ProductMapper.toResponse(productRepository.save(product));
+        return toResponseWithSummary(productRepository.save(product), null);
+    }
+
+    private ProductResponse toResponseWithSummary(Product product, ReviewService.ReviewSummary summary) {
+        ReviewService.ReviewSummary resolved = summary;
+        if (resolved == null && product.getId() != null) {
+            resolved = reviewService.summariesForProducts(List.of(product.getId())).get(product.getId());
+        }
+        Double averageRating = resolved != null ? resolved.averageRating() : null;
+        Integer reviewCount = resolved != null ? resolved.reviewCount() : 0;
+        return ProductMapper.toResponse(product, averageRating, reviewCount);
     }
 
     public static String slugify(String name) {

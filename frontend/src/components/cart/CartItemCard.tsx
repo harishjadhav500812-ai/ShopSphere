@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { QuantitySelector } from '../product/QuantitySelector';
+import { formatMoney } from '../../utils/format';
 import { Trash2, Heart, Package } from 'lucide-react';
 
 export interface CartItemData {
@@ -9,9 +10,11 @@ export interface CartItemData {
   name: string;
   categoryName?: string;
   price: number;
+  currency?: string;
   originalPrice?: number;
   quantity: number;
   stock?: number;
+  available?: boolean;
   imageUrl?: string;
 }
 
@@ -27,10 +30,11 @@ export const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuanti
   const [removing, setRemoving] = useState(false);
 
   const price = item.price || 0;
-  const originalPrice = item.originalPrice || Math.round(price * 1.35);
+  const originalPrice = item.originalPrice && item.originalPrice > price ? item.originalPrice : 0;
   const hasDiscount = originalPrice > price;
   const discountPct = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
   const itemTotal = price * item.quantity;
+  const unavailable = item.available === false;
 
   const handleRemove = () => {
     setRemoving(true);
@@ -77,12 +81,15 @@ export const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuanti
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '1.0625rem', fontWeight: 800, color: '#111827' }}>₹{price.toLocaleString()}</span>
+          <span style={{ fontSize: '1.0625rem', fontWeight: 800, color: '#111827' }}>{formatMoney(price, item.currency)}</span>
           {hasDiscount && (
             <>
-              <span style={{ fontSize: '0.8125rem', color: '#9ca3af', textDecoration: 'line-through' }}>₹{originalPrice.toLocaleString()}</span>
+              <span style={{ fontSize: '0.8125rem', color: '#9ca3af', textDecoration: 'line-through' }}>{formatMoney(originalPrice, item.currency)}</span>
               <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{discountPct}% OFF</span>
             </>
+          )}
+          {unavailable && (
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>Currently unavailable</span>
           )}
         </div>
 
@@ -116,7 +123,7 @@ export const CartItemCard: React.FC<CartItemCardProps> = ({ item, onUpdateQuanti
       {/* Item Total */}
       <div style={{ textAlign: 'right', alignSelf: 'center', minWidth: 80 }}>
         <div style={{ fontSize: '0.72rem', color: '#9ca3af', fontWeight: 500, marginBottom: '0.2rem' }}>Item Total</div>
-        <div style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0d9488' }}>₹{itemTotal.toLocaleString()}</div>
+        <div style={{ fontSize: '1.125rem', fontWeight: 800, color: '#0d9488' }}>{formatMoney(itemTotal, item.currency)}</div>
       </div>
     </div>
   );

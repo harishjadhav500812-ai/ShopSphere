@@ -52,6 +52,9 @@ public class Product {
     @Column(name = "seller_id", nullable = false)
     private Long sellerId;
 
+    @Column(name = "image_url", length = 1024)
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
@@ -156,6 +159,14 @@ public class Product {
 
     public void setSellerId(Long sellerId) {
         this.sellerId = sellerId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Category getCategory() {

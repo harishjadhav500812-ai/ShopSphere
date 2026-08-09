@@ -1,50 +1,69 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Product } from '../../types';
+import { cartApi } from '../../api/cartApi';
+import { wishlistApi } from '../../api/wishlistApi';
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+import { formatMoney } from '../../utils/format';
 import { Heart, Star, ShoppingBag, Package } from 'lucide-react';
 
 interface ProductCardProps {
-  product: Partial<Product> & {
-    id: number;
-    name: string;
-    price: number;
-    currency?: string;
-    originalPrice?: number;
-    rating?: number;
-    reviewCount?: number;
-    categoryName?: string;
-    imageUrl?: string;
-    stock?: number;
-  };
-  onAddToCart?: (product: Partial<Product>) => void;
+  product: Product;
+  categoryName?: string;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, categoryName }) => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  const { refresh: refreshCart } = useCart();
   const [wishlisted, setWishlisted] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [addState, setAddState] = useState<'idle' | 'added'>('idle');
+  const [addState, setAddState] = useState<'idle' | 'added' | 'error'>('idle');
 
   const price = product.price || 0;
-  const originalPrice = product.originalPrice || 0;
-  const hasDiscount = originalPrice > price;
-  const discountPct = hasDiscount ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
-  const rating = product.rating ?? 4.5;
-  const reviewCount = product.reviewCount ?? 98;
-  const inStock = product.stock === undefined || product.stock > 0;
-  const currency = product.currency === 'USD' ? '$' : '₹';
+  const rating = product.averageRating ?? 0;
+  const reviewCount = product.reviewCount ?? 0;
+  const inStock = product.stock > 0;
 
   const handleClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
     navigate(`/products/${product.id}`);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!inStock) return;
-    if (onAddToCart) onAddToCart(product);
-    setAddState('added');
+    if (!isAuthenticated || user?.role !== 'CUSTOMER') {
+      navigate('/login', { state: { from: { pathname: `/products/${product.id}` } } });
+      return;
+    }
+    try {
+      await cartApi.addItem({ productId: product.id, quantity: 1 });
+      await refreshCart();
+      setAddState('added');
+    } catch {
+      setAddState('error');
+    }
     setTimeout(() => setAddState('idle'), 2000);
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated || user?.role !== 'CUSTOMER') {
+      navigate('/login', { state: { from: { pathname: `/products/${product.id}` } } });
+      return;
+    }
+    if (!wishlisted) {
+      try {
+        await wishlistApi.addItem({ productId: product.id });
+        setWishlisted(true);
+      } catch {
+        /* keep UI state unchanged on failure */
+      }
+    } else {
+      navigate('/wishlist');
+    }
   };
 
   return (
@@ -69,21 +88,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         transition: 'transform 220ms cubic-bezier(0.4,0,0.2,1), box-shadow 220ms cubic-bezier(0.4,0,0.2,1), border-color 220ms',
       }}
     >
-      {/* Discount Badge */}
-      {hasDiscount && (
-        <span style={{
-          position: 'absolute', top: '0.625rem', left: '0.625rem',
-          background: '#f97316', color: '#fff', fontWeight: 700,
-          fontSize: '0.6875rem', padding: '0.2rem 0.5rem', borderRadius: '4px', zIndex: 2,
-          letterSpacing: '0.02em',
-        }}>
-          {discountPct}% OFF
-        </span>
-      )}
-
       {/* Wishlist */}
       <button
-        onClick={e => { e.stopPropagation(); setWishlisted(!wishlisted); }}
+        onClick={handleWishlistToggle}
         aria-label="Add to wishlist"
         style={{
           position: 'absolute', top: '0.625rem', right: '0.625rem',
@@ -131,7 +138,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
       <div style={{ padding: '0.875rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '0.5rem' }}>
         {/* Category */}
         <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          {product.categoryName || 'General'}
+          {categoryName || 'General'}
         </span>
 
         {/* Product Name */}
@@ -148,10 +155,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: '#fffbeb', border: '1px solid #fef3c7', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
             <Star size={11} fill="#f59e0b" color="#f59e0b" />
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400e' }}>{rating.toFixed(1)}</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400e' }}>{rating > 0 ? rating.toFixed(1) : 'New'}</span>
           </div>
           <span style={{ fontSize: '0.72rem', color: '#9ca3af' }}>({reviewCount.toLocaleString()})</span>
-          {product.stock !== undefined && product.stock <= 5 && product.stock > 0 && (
+          {product.stock <= 5 && product.stock > 0 && (
             <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#dc2626', marginLeft: 'auto' }}>Only {product.stock} left!</span>
           )}
         </div>
@@ -159,13 +166,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
         {/* Price Row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '1.125rem', fontWeight: 800, color: '#111827' }}>
-            {currency}{price.toLocaleString()}
+            {formatMoney(price, product.priceCurrency)}
           </span>
-          {hasDiscount && (
-            <span style={{ fontSize: '0.8125rem', color: '#9ca3af', textDecoration: 'line-through' }}>
-              {currency}{originalPrice.toLocaleString()}
-            </span>
-          )}
           {!inStock && (
             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', padding: '0.1rem 0.4rem', borderRadius: '4px', marginLeft: 'auto' }}>
               Out of Stock
@@ -194,7 +196,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           className="btn-press"
         >
           <ShoppingBag size={14} strokeWidth={2.2} />
-          {addState === 'added' ? 'Added to Cart ✓' : inStock ? 'Add to Cart' : 'Unavailable'}
+          {addState === 'added' ? 'Added to Cart ✓' : addState === 'error' ? 'Failed — Retry' : inStock ? 'Add to Cart' : 'Unavailable'}
         </button>
       </div>
     </div>

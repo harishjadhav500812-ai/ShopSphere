@@ -12,6 +12,7 @@ import com.shopsphere.security.JwtService;
 import com.shopsphere.user.domain.User;
 import com.shopsphere.user.dto.UserResponse;
 import com.shopsphere.user.repository.UserRepository;
+import com.shopsphere.verification.service.EmailVerificationService;
 
 @Service
 public class AuthService {
@@ -19,15 +20,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            EmailVerificationService emailVerificationService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional(readOnly = true)
@@ -39,6 +43,11 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw invalidCredentials();
+        }
+
+        if (emailVerificationService.isVerificationRequired() && !user.isEmailVerified()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "EMAIL_NOT_VERIFIED: Please verify your email address before signing in.");
         }
 
         String accessToken = jwtService.createAccessToken(user);

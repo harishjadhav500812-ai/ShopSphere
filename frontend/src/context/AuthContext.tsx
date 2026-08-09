@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authApi } from '../api/authApi';
-import type { AuthTokenResponse, LoginRequest, RegisterRequest, User, UserRole } from '../types';
+import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User, UserRole } from '../types';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginRequest) => Promise<AuthTokenResponse>;
-  register: (data: RegisterRequest) => Promise<User>;
+  login: (credentials: LoginRequest) => Promise<LoginResponse>;
+  register: (data: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => void;
   hasRole: (roles: UserRole | UserRole[]) => boolean;
 }
@@ -43,18 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initAuth();
   }, [token]);
 
-  const login = async (credentials: LoginRequest): Promise<AuthTokenResponse> => {
+  const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
     const res = await authApi.login(credentials);
-    setToken(res.token);
-    localStorage.setItem('shopsphere_token', res.token);
+    setToken(res.accessToken);
+    localStorage.setItem('shopsphere_token', res.accessToken);
 
-    const profile = await authApi.getCurrentUser();
-    setUser(profile);
-    localStorage.setItem('shopsphere_user', JSON.stringify(profile));
+    setUser(res.user);
+    localStorage.setItem('shopsphere_user', JSON.stringify(res.user));
     return res;
   };
 
-  const register = async (data: RegisterRequest): Promise<User> => {
+  const register = async (data: RegisterRequest): Promise<RegisterResponse> => {
     return await authApi.register(data);
   };
 

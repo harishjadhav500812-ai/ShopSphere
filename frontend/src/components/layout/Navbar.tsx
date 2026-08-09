@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import { categoryApi } from '../../api/categoryApi';
 import type { Category } from '../../types';
 import { Button } from '../ui/Button';
@@ -11,6 +12,7 @@ import {
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { itemCount } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -126,7 +128,8 @@ export const Navbar: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto', flexShrink: 0 }}>
 
           {/* Wishlist icon */}
-          <button
+          <Link
+            to="/wishlist"
             className="desktop-only"
             style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', fontWeight: 500, transition: 'background 150ms' }}
             onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
@@ -134,7 +137,7 @@ export const Navbar: React.FC = () => {
             aria-label="Wishlist"
           >
             <Heart size={20} />
-          </button>
+          </Link>
 
           {/* User account */}
           {isAuthenticated && user ? (
@@ -156,9 +159,10 @@ export const Navbar: React.FC = () => {
                     <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#111827' }}>{user.fullName}</div>
                     <div style={{ fontSize: '0.75rem', color: '#0d9488', fontWeight: 600, marginTop: '0.125rem' }}>{user.role}</div>
                   </div>
-                  {user.role === 'CUSTOMER' && <a href="/orders" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>My Orders</a>}
-                  {user.role === 'SELLER' && <a href="/seller" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Seller Dashboard</a>}
-                  {user.role === 'ADMIN' && <a href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Admin Panel</a>}
+                  {user.role === 'CUSTOMER' && <Link to="/orders" onClick={() => setIsUserMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>My Orders</Link>}
+                  {user.role === 'CUSTOMER' && <Link to="/wishlist" onClick={() => setIsUserMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>My Wishlist</Link>}
+                  {user.role === 'SELLER' && <Link to="/seller" onClick={() => setIsUserMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Seller Dashboard</Link>}
+                  {user.role === 'ADMIN' && <Link to="/admin" onClick={() => setIsUserMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#374151', fontWeight: 500, transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Admin Panel</Link>}
                   <button onClick={handleLogout} style={{ width: '100%', background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem', borderRadius: '6px', fontSize: '0.875rem', color: '#dc2626', fontWeight: 600, cursor: 'pointer', marginTop: '0.25rem', borderTop: '1px solid #f3f4f6', paddingTop: '0.625rem', transition: 'background 130ms' }} onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                     <LogOut size={14} /> Sign Out
                   </button>
@@ -182,7 +186,7 @@ export const Navbar: React.FC = () => {
             <ShoppingBag size={18} />
             <span>Cart</span>
             <span style={{ background: '#0d9488', color: '#fff', fontSize: '0.6875rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '999px', minWidth: '18px', textAlign: 'center' }} className="badge-animating">
-              2
+              {itemCount}
             </span>
           </Link>
         </div>

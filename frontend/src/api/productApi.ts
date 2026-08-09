@@ -1,16 +1,25 @@
 import { apiClient } from './client';
-import type { CreateProductRequest, Page, Product, UpdateProductRequest } from '../types';
+import type {
+  CreateProductRequest,
+  Product,
+  UpdateProductRequest,
+  UpdateProductStatusRequest,
+  UpdateStockRequest,
+} from '../types';
 
 export const productApi = {
-  getProducts(params?: { categoryId?: number; search?: string; page?: number; size?: number }): Promise<Page<Product>> {
+  /** GET /api/products returns a plain list from the backend. */
+  getProducts(params?: { categoryId?: number; search?: string; activeOnly?: boolean }): Promise<Product[]> {
     const query = new URLSearchParams();
     if (params?.categoryId) query.append('categoryId', params.categoryId.toString());
     if (params?.search) query.append('search', params.search);
-    if (params?.page !== undefined) query.append('page', params.page.toString());
-    if (params?.size !== undefined) query.append('size', params.size.toString());
-
     const queryString = query.toString() ? `?${query.toString()}` : '';
-    return apiClient.get<Page<Product>>(`/api/products${queryString}`);
+    return apiClient.get<Product[]>(`/api/products${queryString}`).then(products => {
+      if (params?.activeOnly) {
+        return products.filter(p => p.active);
+      }
+      return products;
+    });
   },
 
   getProductById(id: number): Promise<Product> {
@@ -23,6 +32,14 @@ export const productApi = {
 
   updateProduct(id: number, request: UpdateProductRequest): Promise<Product> {
     return apiClient.put<Product>(`/api/products/${id}`, request);
+  },
+
+  updateProductStatus(id: number, request: UpdateProductStatusRequest): Promise<Product> {
+    return apiClient.patch<Product>(`/api/products/${id}/status`, request);
+  },
+
+  updateStock(id: number, request: UpdateStockRequest): Promise<Product> {
+    return apiClient.post<Product>(`/api/products/${id}/stock`, request);
   },
 
   deleteProduct(id: number): Promise<void> {
