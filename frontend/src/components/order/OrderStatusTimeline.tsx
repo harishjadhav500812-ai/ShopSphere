@@ -27,6 +27,7 @@ function computeSteps(orderStatus: OrderStatus, shippingStatus?: ShippingStatus)
     case 'CONFIRMED': doneIndex = 1; break;
     case 'PROCESSING': doneIndex = 2; break;
     case 'SHIPPED': doneIndex = 3; break;
+    case 'OUT_FOR_DELIVERY': doneIndex = 4; break;
     case 'DELIVERED': doneIndex = 5; break;
     default: doneIndex = 0;
   }

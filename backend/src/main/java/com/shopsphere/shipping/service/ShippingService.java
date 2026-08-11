@@ -132,6 +132,11 @@ public class ShippingService {
                 order.setStatus(OrderStatus.SHIPPED);
                 orderRepository.save(order);
             }
+        } else if (newStatus == ShippingStatus.OUT_FOR_DELIVERY) {
+            if (order.getStatus().canTransitionTo(OrderStatus.OUT_FOR_DELIVERY)) {
+                order.setStatus(OrderStatus.OUT_FOR_DELIVERY);
+                orderRepository.save(order);
+            }
         } else if (newStatus == ShippingStatus.DELIVERED) {
             shipping.setDeliveredAt(now);
             if (order.getStatus().canTransitionTo(OrderStatus.DELIVERED)) {

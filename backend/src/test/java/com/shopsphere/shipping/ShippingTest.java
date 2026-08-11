@@ -231,7 +231,7 @@ class ShippingTest {
     @Test
     void deliveryUpdatesOrderToDelivered() throws Exception {
         Long userId = uniqueId();
-        Order order = createOrder(userId, OrderStatus.SHIPPED);
+        Order order = createOrder(userId, OrderStatus.OUT_FOR_DELIVERY);
         Shipping shipping = createShipping(order, validAddress());
         shipping.setShippingStatus(ShippingStatus.OUT_FOR_DELIVERY);
         shippingRepository.save(shipping);

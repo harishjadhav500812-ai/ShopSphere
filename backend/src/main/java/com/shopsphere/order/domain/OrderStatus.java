@@ -5,6 +5,7 @@ public enum OrderStatus {
     CONFIRMED,
     PROCESSING,
     SHIPPED,
+    OUT_FOR_DELIVERY,
     DELIVERED,
     CANCELLED;
 
@@ -16,7 +17,8 @@ public enum OrderStatus {
             case PENDING -> target == CONFIRMED || target == CANCELLED;
             case CONFIRMED -> target == PROCESSING || target == CANCELLED;
             case PROCESSING -> target == SHIPPED || target == CANCELLED;
-            case SHIPPED -> target == DELIVERED;
+            case SHIPPED -> target == OUT_FOR_DELIVERY;
+            case OUT_FOR_DELIVERY -> target == DELIVERED;
             case DELIVERED, CANCELLED -> false;
         };
     }

@@ -7,7 +7,7 @@ import { Pagination } from '../../components/catalog/Pagination';
 import { formatMoney, formatDateTime } from '../../utils/format';
 import { PackageSearch } from 'lucide-react';
 
-const ORDER_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+const ORDER_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
 
 export const AdminOrdersPage: React.FC = () => {
   const [page, setPage] = useState<Page<Order> | null>(null);

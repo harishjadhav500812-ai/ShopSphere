@@ -9,18 +9,118 @@ import { formatMoney } from '../utils/format';
 import {
   Zap, Truck, ShieldCheck, RotateCcw,
   Headphones, Shirt, Home, Sparkles, BookOpen, Dumbbell, Tag,
-  ArrowRight, Package, Layers, Store, Star, Flame, CheckCircle2, Lock
+  ArrowRight, Package, Layers, Store, Star, Flame, CheckCircle2, Lock,
+  Car, Activity, Gamepad2, Compass
 } from 'lucide-react';
 
-const categoryVisuals = [
-  { icon: Headphones, color: '#f0fdfa', iconColor: '#0d9488', desc: 'Gadgets & Tech' },
-  { icon: Shirt, color: '#fdf4ff', iconColor: '#9333ea', desc: 'Apparel & Trends' },
-  { icon: Home, color: '#eff6ff', iconColor: '#2563eb', desc: 'Kitchen & Decor' },
-  { icon: Sparkles, color: '#fff7ed', iconColor: '#f97316', desc: 'Skincare & Makeup' },
-  { icon: BookOpen, color: '#f0fdf4', iconColor: '#16a34a', desc: 'Best Seller Books' },
-  { icon: Dumbbell, color: '#fefce8', iconColor: '#ca8a04', desc: 'Gym & Outdoor' },
-  { icon: Tag, color: '#eff6ff', iconColor: '#2563eb', desc: 'Special Bargains' },
-  { icon: Package, color: '#fdf4ff', iconColor: '#9333ea', desc: 'Daily Essentials' },
+interface CategoryVisualConfig {
+  icon: React.ElementType;
+  bgGradient: string;
+  iconBg: string;
+  iconBgColor: string;
+  shadow: string;
+  badge: string;
+  desc: string;
+}
+
+const categoryMetaMap: Record<string, CategoryVisualConfig> = {
+  'electronics': {
+    icon: Headphones,
+    bgGradient: 'linear-gradient(135deg, #e6fffa 0%, #ccfbf1 100%)',
+    iconBg: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+    iconBgColor: '#0d9488',
+    shadow: 'rgba(13, 148, 136, 0.28)',
+    badge: 'Popular',
+    desc: 'Gadgets & Audio'
+  },
+  'fashion': {
+    icon: Shirt,
+    bgGradient: 'linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%)',
+    iconBg: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)',
+    iconBgColor: '#9333ea',
+    shadow: 'rgba(147, 51, 234, 0.28)',
+    badge: 'Trending',
+    desc: 'Apparel & Style'
+  },
+  'home & kitchen': {
+    icon: Home,
+    bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+    iconBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    iconBgColor: '#2563eb',
+    shadow: 'rgba(37, 99, 235, 0.28)',
+    badge: 'Best Seller',
+    desc: 'Decor & Appliances'
+  },
+  'beauty & personal care': {
+    icon: Sparkles,
+    bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)',
+    iconBg: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+    iconBgColor: '#ea580c',
+    shadow: 'rgba(234, 88, 12, 0.28)',
+    badge: 'Top Rated',
+    desc: 'Skincare & Cosmetics'
+  },
+  'grocery': {
+    icon: Package,
+    bgGradient: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+    iconBg: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+    iconBgColor: '#16a34a',
+    shadow: 'rgba(22, 163, 74, 0.28)',
+    badge: 'Fresh Daily',
+    desc: 'Groceries & Pantry'
+  },
+  'sports & fitness': {
+    icon: Dumbbell,
+    bgGradient: 'linear-gradient(135deg, #fef08a 0%, #fef9c3 100%)',
+    iconBg: 'linear-gradient(135deg, #ca8a04 0%, #854d0e 100%)',
+    iconBgColor: '#ca8a04',
+    shadow: 'rgba(202, 138, 4, 0.28)',
+    badge: 'Active Wear',
+    desc: 'Gym & Outdoors'
+  },
+  'books': {
+    icon: BookOpen,
+    bgGradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
+    iconBg: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+    iconBgColor: '#7c3aed',
+    shadow: 'rgba(124, 58, 237, 0.28)',
+    badge: 'Best Reads',
+    desc: 'Fiction & Study'
+  },
+  'toys & games': {
+    icon: Gamepad2,
+    bgGradient: 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)',
+    iconBg: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+    iconBgColor: '#e11d48',
+    shadow: 'rgba(225, 29, 72, 0.28)',
+    badge: 'Kids Choice',
+    desc: 'Toys & Hobbies'
+  },
+  'automotive': {
+    icon: Car,
+    bgGradient: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+    iconBg: 'linear-gradient(135deg, #475569 0%, #334155 100%)',
+    iconBgColor: '#475569',
+    shadow: 'rgba(71, 85, 105, 0.28)',
+    badge: 'Auto Gear',
+    desc: 'Parts & Car Care'
+  },
+  'health & wellness': {
+    icon: Activity,
+    bgGradient: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)',
+    iconBg: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+    iconBgColor: '#0891b2',
+    shadow: 'rgba(8, 145, 178, 0.28)',
+    badge: 'Vital Care',
+    desc: 'Wellness & Health'
+  }
+};
+
+const fallbackVisuals: CategoryVisualConfig[] = [
+  { icon: Headphones, bgGradient: 'linear-gradient(135deg, #e6fffa 0%, #ccfbf1 100%)', iconBg: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', iconBgColor: '#0d9488', shadow: 'rgba(13, 148, 136, 0.28)', badge: 'Featured', desc: 'Explore items' },
+  { icon: Shirt, bgGradient: 'linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%)', iconBg: 'linear-gradient(135deg, #9333ea 0%, #7e22ce 100%)', iconBgColor: '#9333ea', shadow: 'rgba(147, 51, 234, 0.28)', badge: 'Hot Pick', desc: 'Explore items' },
+  { icon: Home, bgGradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', iconBg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', iconBgColor: '#2563eb', shadow: 'rgba(37, 99, 235, 0.28)', badge: 'Top Choice', desc: 'Explore items' },
+  { icon: Sparkles, bgGradient: 'linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)', iconBg: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)', iconBgColor: '#ea580c', shadow: 'rgba(234, 88, 12, 0.28)', badge: 'Special', desc: 'Explore items' },
 ];
 
 const trustItems = [
@@ -226,69 +326,197 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ══ SHOP BY CATEGORY SECTION ════════════════════════════════ */}
-      <section id="categories" style={{ padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.25rem, 4vw, 2.5rem)', background: '#ffffff' }}>
+      <section id="categories" style={{ padding: 'clamp(3rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 2.5rem)', background: '#f8fafc', position: 'relative' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.75rem', gap: '1rem', flexWrap: 'wrap' }}>
+          
+          {/* Section Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.25rem', gap: '1rem', flexWrap: 'wrap' }}>
             <div>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.375rem, 3vw, 1.75rem)', fontWeight: 800, color: '#111827', letterSpacing: '-0.01em' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(13, 148, 136, 0.08)', border: '1px solid rgba(13, 148, 136, 0.2)', color: '#0d9488', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.625rem' }}>
+                <Layers size={13} /> Browse Marketplace
+              </div>
+              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 'clamp(1.5rem, 3.5vw, 2.125rem)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', margin: 0 }}>
                 Shop by Category
               </h2>
-              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                Explore products across every major department
+              <p style={{ fontSize: '0.9375rem', color: '#64748b', marginTop: '0.35rem' }}>
+                Explore handpicked products across top verified departments
               </p>
             </div>
-            <Link to="/products" style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0d9488', display: 'flex', alignItems: 'center', gap: '0.35rem', textDecoration: 'none' }}>
-              View All Categories <ArrowRight size={15} />
+
+            <Link
+              to="/products"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.625rem 1.25rem',
+                borderRadius: '999px',
+                background: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                color: '#0f766e',
+                fontWeight: 800,
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                transition: 'all 200ms ease'
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget;
+                el.style.borderColor = '#0d9488';
+                el.style.color = '#0d9488';
+                el.style.transform = 'translateY(-2px)';
+                el.style.boxShadow = '0 6px 16px rgba(13, 148, 136, 0.15)';
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget;
+                el.style.borderColor = '#e2e8f0';
+                el.style.color = '#0f766e';
+                el.style.transform = 'translateY(0)';
+                el.style.boxShadow = '0 2px 6px rgba(15, 23, 42, 0.04)';
+              }}
+            >
+              View All Departments <ArrowRight size={16} />
             </Link>
           </div>
 
+          {/* Cards Grid */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 140px), 1fr))',
-              gap: '1rem'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 175px), 1fr))',
+              gap: '1.25rem'
             }}
           >
             {categories.map((cat, index) => {
-              const visual = categoryVisuals[index % categoryVisuals.length];
+              const key = cat.name.toLowerCase().trim();
+              const visual = categoryMetaMap[key] || fallbackVisuals[index % fallbackVisuals.length];
               const Icon = visual.icon;
+
               return (
                 <Link
                   key={cat.id}
                   to={`/products?categoryId=${cat.id}`}
                   style={{
-                    padding: '1.25rem 0.75rem',
+                    position: 'relative',
+                    padding: '1.5rem 1rem 1.25rem 1rem',
                     textAlign: 'center',
                     background: '#ffffff',
-                    border: '1.5px solid #e5e7eb',
-                    borderRadius: '14px',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '20px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '0.625rem',
                     textDecoration: 'none',
-                    transition: 'all 200ms cubic-bezier(0.4,0,0.2,1)',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                    transition: 'all 280ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)',
+                    overflow: 'hidden'
                   }}
                   onMouseEnter={e => {
                     const el = e.currentTarget;
-                    el.style.borderColor = '#0d9488';
-                    el.style.transform = 'translateY(-4px)';
-                    el.style.boxShadow = '0 8px 20px rgba(13,148,136,0.12)';
+                    el.style.borderColor = visual.iconBgColor || '#0d9488';
+                    el.style.transform = 'translateY(-6px)';
+                    el.style.boxShadow = `0 14px 28px ${visual.shadow || 'rgba(13,148,136,0.18)'}`;
+                    const iconBox = el.querySelector('.cat-icon-box') as HTMLElement;
+                    if (iconBox) {
+                      iconBox.style.transform = 'scale(1.1) rotate(5deg)';
+                    }
+                    const badge = el.querySelector('.cat-arrow-badge') as HTMLElement;
+                    if (badge) {
+                      badge.style.opacity = '1';
+                      badge.style.transform = 'translateY(0)';
+                    }
                   }}
                   onMouseLeave={e => {
                     const el = e.currentTarget;
-                    el.style.borderColor = '#e5e7eb';
+                    el.style.borderColor = '#e2e8f0';
                     el.style.transform = 'translateY(0)';
-                    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.02)';
+                    el.style.boxShadow = '0 4px 12px rgba(15, 23, 42, 0.03)';
+                    const iconBox = el.querySelector('.cat-icon-box') as HTMLElement;
+                    if (iconBox) {
+                      iconBox.style.transform = 'scale(1) rotate(0deg)';
+                    }
+                    const badge = el.querySelector('.cat-arrow-badge') as HTMLElement;
+                    if (badge) {
+                      badge.style.opacity = '0.7';
+                      badge.style.transform = 'translateY(2px)';
+                    }
                   }}
                 >
-                  <div style={{ width: 50, height: 50, borderRadius: '12px', background: visual.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={24} color={visual.iconColor} strokeWidth={1.8} />
+                  {/* Top Glowing Color Accent Line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '4px',
+                      background: visual.iconBg
+                    }}
+                  />
+
+                  {/* Badge */}
+                  <span
+                    style={{
+                      fontSize: '0.6875rem',
+                      fontWeight: 800,
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '999px',
+                      background: visual.bgGradient,
+                      color: visual.iconBgColor || '#0d9488',
+                      marginBottom: '1rem',
+                      letterSpacing: '0.02em',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {visual.badge || 'Featured'}
+                  </span>
+
+                  {/* Icon Container */}
+                  <div
+                    className="cat-icon-box"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '16px',
+                      background: visual.iconBg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: `0 8px 18px ${visual.shadow || 'rgba(0,0,0,0.1)'}`,
+                      marginBottom: '0.875rem',
+                      transition: 'transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    }}
+                  >
+                    <Icon size={26} color="#ffffff" strokeWidth={2.2} />
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#111827' }}>{cat.name}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 600, marginTop: '0.1rem' }}>Explore →</div>
+
+                  {/* Title & Desc */}
+                  <div style={{ marginTop: '0.15rem', width: '100%' }}>
+                    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 800, fontSize: '0.9375rem', color: '#0f172a', lineHeight: 1.3 }}>
+                      {cat.name}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 500 }}>
+                      {visual.desc || 'Explore items'}
+                    </div>
+                  </div>
+
+                  {/* Bottom Arrow Indicator */}
+                  <div
+                    className="cat-arrow-badge"
+                    style={{
+                      marginTop: '0.875rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      color: visual.iconBgColor || '#0d9488',
+                      opacity: 0.7,
+                      transform: 'translateY(2px)',
+                      transition: 'all 200ms ease'
+                    }}
+                  >
+                    Explore <ArrowRight size={13} />
                   </div>
                 </Link>
               );

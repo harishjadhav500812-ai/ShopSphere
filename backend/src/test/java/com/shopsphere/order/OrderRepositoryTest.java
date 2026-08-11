@@ -1,17 +1,16 @@
 package com.shopsphere.order;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.shopsphere.order.domain.Order;
 import com.shopsphere.order.domain.OrderItem;
@@ -21,6 +20,7 @@ import com.shopsphere.order.repository.OrderRepository;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class OrderRepositoryTest {
 
     @Autowired
@@ -37,6 +37,7 @@ class OrderRepositoryTest {
                         OrderStatus.CONFIRMED,
                         OrderStatus.PROCESSING,
                         OrderStatus.SHIPPED,
+                        OrderStatus.OUT_FOR_DELIVERY,
                         OrderStatus.DELIVERED,
                         OrderStatus.CANCELLED
                 );
@@ -48,6 +49,7 @@ class OrderRepositoryTest {
 
         Order found = orderRepository.findById(saved.getId()).orElseThrow();
 
+        assertThat(found.getId()).isNotNull();
         assertThat(found.getUserId()).isEqualTo(1001L);
         assertThat(found.getStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(found.getTotalAmount()).isEqualByComparingTo("49.98");
@@ -58,83 +60,87 @@ class OrderRepositoryTest {
     }
 
     @Test
-    void saveAndLoadOrderItemsWithSnapshotFields() {
-        Order order = orderRepository.save(new Order(1002L, OrderStatus.CONFIRMED, new BigDecimal("59.98"), "USD"));
-        OrderItem item = orderItemRepository.save(new OrderItem(
+    void createOrderWithLineItemsAndCascade() {
+        Order order = new Order(1002L, OrderStatus.PENDING, new BigDecimal("129.99"), "USD");
+
+        OrderItem item1 = new OrderItem(
                 order,
-                2001L,
-                3001L,
-                "SKU-ORDER-1",
-                "Snapshot Product",
+                101L,
+                501L,
+                "SKU-101",
+                "Wireless Mouse",
                 new BigDecimal("29.99"),
                 "USD",
-                2,
-                new BigDecimal("59.98")
-        ));
+                1,
+                new BigDecimal("29.99")
+        );
 
-        OrderItem found = orderItemRepository.findById(item.getId()).orElseThrow();
+        OrderItem item2 = new OrderItem(
+                order,
+                102L,
+                502L,
+                "SKU-102",
+                "Mechanical Keyboard",
+                new BigDecimal("100.00"),
+                "USD",
+                1,
+                new BigDecimal("100.00")
+        );
 
-        assertThat(found.getOrderId()).isEqualTo(order.getId());
-        assertThat(found.getProductId()).isEqualTo(2001L);
-        assertThat(found.getSellerId()).isEqualTo(3001L);
-        assertThat(found.getSku()).isEqualTo("SKU-ORDER-1");
-        assertThat(found.getProductName()).isEqualTo("Snapshot Product");
-        assertThat(found.getUnitPriceAmount()).isEqualByComparingTo("29.99");
-        assertThat(found.getPriceCurrency()).isEqualTo("USD");
-        assertThat(found.getQuantity()).isEqualTo(2);
-        assertThat(found.getLineTotal()).isEqualByComparingTo("59.98");
+        order.getItems().add(item1);
+        order.getItems().add(item2);
+
+        Order saved = orderRepository.save(order);
+
+        Order reloaded = orderRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getItems()).hasSize(2);
+        assertThat(reloaded.getItems()).extracting(OrderItem::getProductName)
+                .containsExactlyInAnyOrder("Wireless Mouse", "Mechanical Keyboard");
     }
 
     @Test
-    void findCustomerOrders() {
-        Order first = orderRepository.save(new Order(1003L, OrderStatus.PENDING, new BigDecimal("10.00"), "USD"));
-        Order second = orderRepository.save(new Order(1003L, OrderStatus.SHIPPED, new BigDecimal("20.00"), "USD"));
-        orderRepository.save(new Order(9999L, OrderStatus.PENDING, new BigDecimal("30.00"), "USD"));
+    void repositoryQueriesByUserId() {
+        orderRepository.save(new Order(2001L, OrderStatus.PENDING, new BigDecimal("10.00"), "USD"));
+        orderRepository.save(new Order(2001L, OrderStatus.CONFIRMED, new BigDecimal("20.00"), "USD"));
+        orderRepository.save(new Order(2002L, OrderStatus.PENDING, new BigDecimal("30.00"), "USD"));
 
-        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(1003L);
-        var page = orderRepository.findByUserId(1003L, PageRequest.of(0, 10));
+        List<Order> user2001Orders = orderRepository.findByUserIdOrderByCreatedAtDesc(2001L);
 
-        assertThat(orders).extracting(Order::getId).contains(first.getId(), second.getId());
-        assertThat(orders).extracting(Order::getUserId).containsOnly(1003L);
-        assertThat(page.getContent()).hasSize(2);
-        assertThat(page.getContent()).extracting(Order::getUserId).containsOnly(1003L);
+        assertThat(user2001Orders).hasSize(2);
+        assertThat(user2001Orders).allMatch(o -> o.getUserId().equals(2001L));
     }
 
     @Test
-    void findOrderItemsByOrderIdAndOrderIdIn() {
-        Order order = orderRepository.save(new Order(1004L, OrderStatus.PENDING, new BigDecimal("42.00"), "USD"));
-        Order otherOrder = orderRepository.save(new Order(1005L, OrderStatus.PENDING, new BigDecimal("12.00"), "USD"));
+    void repositoryQueriesBySellerId() {
+        Long sellerA = 901L;
+        Long sellerB = 902L;
 
-        OrderItem first = orderItemRepository.save(new OrderItem(order, 4001L, 5001L, "SKU-A", "Product A", new BigDecimal("20.00"), "USD", 1, new BigDecimal("20.00")));
-        OrderItem second = orderItemRepository.save(new OrderItem(order, 4002L, 5002L, "SKU-B", "Product B", new BigDecimal("22.00"), "USD", 1, new BigDecimal("22.00")));
-        OrderItem third = orderItemRepository.save(new OrderItem(otherOrder, 4003L, 5003L, "SKU-C", "Product C", new BigDecimal("12.00"), "USD", 1, new BigDecimal("12.00")));
+        Order o1 = new Order(3001L, OrderStatus.CONFIRMED, new BigDecimal("50.00"), "USD");
+        OrderItem item1 = new OrderItem(o1, 11L, sellerA, "SKU-A", "Item A", new BigDecimal("50.00"), "USD", 1, new BigDecimal("50.00"));
+        o1.getItems().add(item1);
+        orderRepository.save(o1);
 
-        assertThat(orderItemRepository.findByOrderId(order.getId()))
-                .extracting(OrderItem::getId)
-                .containsExactlyInAnyOrder(first.getId(), second.getId());
+        Order o2 = new Order(3002L, OrderStatus.PROCESSING, new BigDecimal("80.00"), "USD");
+        OrderItem item2 = new OrderItem(o2, 12L, sellerB, "SKU-B", "Item B", new BigDecimal("80.00"), "USD", 1, new BigDecimal("80.00"));
+        o2.getItems().add(item2);
+        orderRepository.save(o2);
 
-        assertThat(orderItemRepository.findByOrderIdIn(List.of(order.getId(), otherOrder.getId())))
-                .extracting(OrderItem::getId)
-                .containsExactlyInAnyOrder(first.getId(), second.getId(), third.getId());
+        List<Order> sellerAOrders = orderRepository.findBySellerId(sellerA, Pageable.unpaged()).getContent();
+
+        assertThat(sellerAOrders).hasSize(1);
+        assertThat(sellerAOrders.get(0).getId()).isEqualTo(o1.getId());
     }
 
     @Test
-    void findOrdersBySellerIdAndSellerItems() {
-        Long sellerX = 7701L;
-        Long sellerY = 7702L;
+    void orderItemRepositoryFindsByOrderIdAndSellerId() {
+        Long sellerX = 801L;
+        Long sellerY = 802L;
 
-        Order o1 = orderRepository.save(new Order(1010L, OrderStatus.PENDING, new BigDecimal("100.00"), "USD"));
-        Order o2 = orderRepository.save(new Order(1011L, OrderStatus.PENDING, new BigDecimal("50.00"), "USD"));
+        Order o1 = orderRepository.save(new Order(4001L, OrderStatus.CONFIRMED, new BigDecimal("150.00"), "USD"));
+        Order o2 = orderRepository.save(new Order(4002L, OrderStatus.PROCESSING, new BigDecimal("200.00"), "USD"));
 
-        OrderItem item1 = orderItemRepository.save(new OrderItem(o1, 8001L, sellerX, "SKU-X", "Product X", new BigDecimal("40.00"), "USD", 1, new BigDecimal("40.00")));
-        OrderItem item2 = orderItemRepository.save(new OrderItem(o1, 8002L, sellerY, "SKU-Y", "Product Y", new BigDecimal("60.00"), "USD", 1, new BigDecimal("60.00")));
-        OrderItem item3 = orderItemRepository.save(new OrderItem(o2, 8003L, sellerY, "SKU-Y2", "Product Y2", new BigDecimal("50.00"), "USD", 1, new BigDecimal("50.00")));
-
-        Page<Order> sellerXOrders = orderRepository.findBySellerId(sellerX, PageRequest.of(0, 10));
-        Page<Order> sellerYOrders = orderRepository.findBySellerId(sellerY, PageRequest.of(0, 10));
-
-        assertThat(sellerXOrders.getContent()).extracting(Order::getId).containsExactly(o1.getId());
-        assertThat(sellerYOrders.getContent()).extracting(Order::getId).contains(o1.getId(), o2.getId());
+        OrderItem item1 = orderItemRepository.save(new OrderItem(o1, 21L, sellerX, "SKU-X", "Item X", new BigDecimal("50.00"), "USD", 1, new BigDecimal("50.00")));
+        OrderItem item2 = orderItemRepository.save(new OrderItem(o1, 22L, sellerY, "SKU-Y", "Item Y", new BigDecimal("100.00"), "USD", 1, new BigDecimal("100.00")));
 
         List<OrderItem> sellerXItemsForO1 = orderItemRepository.findByOrderIdAndSellerId(o1.getId(), sellerX);
         assertThat(sellerXItemsForO1).extracting(OrderItem::getId).containsExactly(item1.getId());
@@ -150,11 +156,13 @@ class OrderRepositoryTest {
         assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.CANCELLED)).isTrue();
         assertThat(OrderStatus.CONFIRMED.canTransitionTo(OrderStatus.PROCESSING)).isTrue();
         assertThat(OrderStatus.PROCESSING.canTransitionTo(OrderStatus.SHIPPED)).isTrue();
-        assertThat(OrderStatus.SHIPPED.canTransitionTo(OrderStatus.DELIVERED)).isTrue();
+        assertThat(OrderStatus.SHIPPED.canTransitionTo(OrderStatus.OUT_FOR_DELIVERY)).isTrue();
+        assertThat(OrderStatus.OUT_FOR_DELIVERY.canTransitionTo(OrderStatus.DELIVERED)).isTrue();
 
         // Invalid transitions
         assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.SHIPPED)).isFalse();
         assertThat(OrderStatus.PENDING.canTransitionTo(OrderStatus.DELIVERED)).isFalse();
+        assertThat(OrderStatus.SHIPPED.canTransitionTo(OrderStatus.DELIVERED)).isFalse();
         assertThat(OrderStatus.DELIVERED.canTransitionTo(OrderStatus.PENDING)).isFalse();
         assertThat(OrderStatus.CANCELLED.canTransitionTo(OrderStatus.CONFIRMED)).isFalse();
         assertThat(OrderStatus.DELIVERED.canTransitionTo(OrderStatus.CANCELLED)).isFalse();

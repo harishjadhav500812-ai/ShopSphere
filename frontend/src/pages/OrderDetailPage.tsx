@@ -42,6 +42,7 @@ function getTimelineStages(orderStatus: OrderStatus, shippingStatus?: string): {
     case 'CONFIRMED': currentIdx = 1; break;
     case 'PROCESSING': currentIdx = 2; break;
     case 'SHIPPED': currentIdx = 3; break;
+    case 'OUT_FOR_DELIVERY': currentIdx = 4; break;
     case 'DELIVERED': currentIdx = 5; break;
     default: currentIdx = 0;
   }

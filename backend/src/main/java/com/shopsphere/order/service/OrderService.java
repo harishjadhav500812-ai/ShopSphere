@@ -1,11 +1,14 @@
 package com.shopsphere.order.service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -18,26 +21,26 @@ import com.shopsphere.cart.domain.Cart;
 import com.shopsphere.cart.domain.CartItem;
 import com.shopsphere.cart.repository.CartItemRepository;
 import com.shopsphere.cart.repository.CartRepository;
+import com.shopsphere.coupon.domain.Coupon;
+import com.shopsphere.coupon.service.CouponService;
 import com.shopsphere.order.domain.Order;
 import com.shopsphere.order.domain.OrderItem;
 import com.shopsphere.order.domain.OrderStatus;
+import com.shopsphere.order.dto.CreateOrderRequest;
 import com.shopsphere.order.dto.OrderListItem;
 import com.shopsphere.order.dto.OrderResponse;
 import com.shopsphere.order.mapper.OrderMapper;
 import com.shopsphere.order.repository.OrderItemRepository;
 import com.shopsphere.order.repository.OrderRepository;
-import com.shopsphere.coupon.domain.Coupon;
-import com.shopsphere.coupon.service.CouponService;
-import com.shopsphere.order.dto.CreateOrderRequest;
-import com.shopsphere.payment.dto.PaymentRequest;
-import com.shopsphere.payment.dto.PaymentResult;
 import com.shopsphere.payment.service.PaymentGateway;
 import com.shopsphere.payment.service.PaymentService;
 import com.shopsphere.pricing.service.PricingCalculator;
 import com.shopsphere.pricing.service.PricingResult;
 import com.shopsphere.product.domain.Product;
 import com.shopsphere.product.repository.ProductRepository;
-import org.springframework.context.annotation.Lazy;
+import com.shopsphere.shipping.domain.Shipping;
+import com.shopsphere.shipping.domain.ShippingStatus;
+import com.shopsphere.shipping.repository.ShippingRepository;
 
 @Service
 public class OrderService {
@@ -51,6 +54,7 @@ public class OrderService {
     private final PaymentService paymentService;
     private final CouponService couponService;
     private final PricingCalculator pricingCalculator;
+    private final ShippingRepository shippingRepository;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -61,7 +65,8 @@ public class OrderService {
             PaymentGateway paymentGateway,
             @Lazy PaymentService paymentService,
             CouponService couponService,
-            PricingCalculator pricingCalculator
+            PricingCalculator pricingCalculator,
+            ShippingRepository shippingRepository
     ) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -72,6 +77,7 @@ public class OrderService {
         this.paymentService = paymentService;
         this.couponService = couponService;
         this.pricingCalculator = pricingCalculator;
+        this.shippingRepository = shippingRepository;
     }
 
     @Transactional
@@ -177,6 +183,7 @@ public class OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
+        syncShippingStatusOnCancel(order);
         return OrderMapper.toResponse(savedOrder, items);
     }
 
@@ -184,8 +191,12 @@ public class OrderService {
     public OrderResponse updateOrderStatusByAdmin(Long id, OrderStatus newStatus) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
+
+        if (order.getStatus() == newStatus) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order is already in status " + newStatus);
+        }
         if (!order.getStatus().canTransitionTo(newStatus)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid order status transition from " + order.getStatus() + " to " + newStatus);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change order status from " + order.getStatus() + " to " + newStatus);
         }
 
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
@@ -198,6 +209,8 @@ public class OrderService {
 
         order.setStatus(newStatus);
         Order savedOrder = orderRepository.save(order);
+
+        syncShippingWithOrderStatus(savedOrder, newStatus);
         return OrderMapper.toResponse(savedOrder, items);
     }
 
@@ -299,12 +312,6 @@ public class OrderService {
         return OrderMapper.toResponse(order, items);
     }
 
-    /**
-     * Sellers may only advance an order through their portion of the fulfillment lifecycle
-     * (CONFIRMED / PROCESSING / SHIPPED). DELIVERED and CANCELLED remain controlled by the
-     * customer (cancel) or admin/system (delivery confirmation), enforced server-side here
-     * regardless of what the frontend sends.
-     */
     private static final java.util.Set<OrderStatus> SELLER_ALLOWED_TARGET_STATUSES =
             java.util.Set.of(OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED);
 
@@ -318,11 +325,14 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found");
         }
 
+        if (order.getStatus() == newStatus) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order is already in status " + newStatus);
+        }
         if (!SELLER_ALLOWED_TARGET_STATUSES.contains(newStatus)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sellers may only set status to CONFIRMED, PROCESSING, or SHIPPED");
         }
         if (!order.getStatus().canTransitionTo(newStatus)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid order status transition from " + order.getStatus() + " to " + newStatus);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot change order status from " + order.getStatus() + " to " + newStatus);
         }
 
         List<OrderItem> allItems = orderItemRepository.findByOrderId(orderId);
@@ -332,7 +342,66 @@ public class OrderService {
 
         order.setStatus(newStatus);
         Order savedOrder = orderRepository.save(order);
+
+        syncShippingWithOrderStatus(savedOrder, newStatus);
         return OrderMapper.toResponse(savedOrder, sellerItems);
+    }
+
+    private void syncShippingWithOrderStatus(Order order, OrderStatus newStatus) {
+        Instant now = Instant.now();
+        Shipping shipping = shippingRepository.findByOrderId(order.getId()).orElse(null);
+
+        if (newStatus == OrderStatus.SHIPPED) {
+            if (shipping == null) {
+                shipping = new Shipping(
+                        order,
+                        "Customer Recipient",
+                        "+10000000000",
+                        "123 Delivery St",
+                        "",
+                        "City",
+                        "State",
+                        "10001",
+                        "USA",
+                        "SIM-TRACK-" + UUID.randomUUID(),
+                        "SimulatedExpress"
+                );
+            }
+            if (shipping.getTrackingNumber() == null) {
+                shipping.setTrackingNumber("SIM-TRACK-" + UUID.randomUUID());
+            }
+            if (shipping.getCarrier() == null) {
+                shipping.setCarrier("SimulatedExpress");
+            }
+            shipping.setShippingStatus(ShippingStatus.SHIPPED);
+            if (shipping.getShippedAt() == null) {
+                shipping.setShippedAt(now);
+            }
+            shippingRepository.save(shipping);
+        } else if (newStatus == OrderStatus.OUT_FOR_DELIVERY) {
+            if (shipping != null) {
+                shipping.setShippingStatus(ShippingStatus.OUT_FOR_DELIVERY);
+                shippingRepository.save(shipping);
+            }
+        } else if (newStatus == OrderStatus.DELIVERED) {
+            if (shipping != null) {
+                shipping.setShippingStatus(ShippingStatus.DELIVERED);
+                if (shipping.getDeliveredAt() == null) {
+                    shipping.setDeliveredAt(now);
+                }
+                shippingRepository.save(shipping);
+            }
+        } else if (newStatus == OrderStatus.CANCELLED) {
+            syncShippingStatusOnCancel(order);
+        }
+    }
+
+    private void syncShippingStatusOnCancel(Order order) {
+        Shipping shipping = shippingRepository.findByOrderId(order.getId()).orElse(null);
+        if (shipping != null) {
+            shipping.setShippingStatus(ShippingStatus.CANCELLED);
+            shippingRepository.save(shipping);
+        }
     }
 
     private Page<OrderResponse> mapOrderPage(Page<Order> orderPage, Pageable pageable, Long sellerIdFilter) {

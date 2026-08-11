@@ -378,7 +378,15 @@ class OrderControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("SHIPPED"));
 
-        // SHIPPED -> DELIVERED
+        // SHIPPED -> OUT_FOR_DELIVERY
+        mockMvc.perform(patch("/api/admin/orders/" + order.getId() + "/status")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(adminId, "ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"OUT_FOR_DELIVERY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("OUT_FOR_DELIVERY"));
+
+        // OUT_FOR_DELIVERY -> DELIVERED
         mockMvc.perform(patch("/api/admin/orders/" + order.getId() + "/status")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(adminId, "ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -397,6 +405,15 @@ class OrderControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(adminId, "ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"SHIPPED\"}"))
+                .andExpect(status().isBadRequest());
+
+        // SHIPPED -> DELIVERED (invalid, must pass through OUT_FOR_DELIVERY)
+        order.setStatus(OrderStatus.SHIPPED);
+        orderRepository.save(order);
+        mockMvc.perform(patch("/api/admin/orders/" + order.getId() + "/status")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token(adminId, "ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"DELIVERED\"}"))
                 .andExpect(status().isBadRequest());
     }
 
