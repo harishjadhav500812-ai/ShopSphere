@@ -1,5 +1,6 @@
 package com.shopsphere.product.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -16,10 +17,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.shopsphere.product.dto.CreateProductRequest;
 import com.shopsphere.product.dto.ProductResponse;
@@ -57,9 +57,15 @@ public class ProductController {
     public List<ProductResponse> list(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) Boolean inStockOnly,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String sort,
             @RequestParam(required = false) Boolean activeOnly
     ) {
-        return productService.listFiltered(categoryId, search, activeOnly);
+        return productService.listFiltered(categoryId, search, minPrice, maxPrice, minRating, inStockOnly, brand, sort, activeOnly);
     }
 
     @GetMapping(path = "/search/suggestions", produces = MediaType.APPLICATION_JSON_VALUE)

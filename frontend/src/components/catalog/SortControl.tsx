@@ -27,7 +27,7 @@ export const SortControl: React.FC<SortControlProps> = ({ value, onChange }) => 
         <option value="relevance">Featured & Relevance</option>
         <option value="price_asc">Price: Low to High</option>
         <option value="price_desc">Price: High to Low</option>
-        <option value="name_asc">Product Name: A to Z</option>
+        <option value="rating">Customer Rating</option>
         <option value="newest">Newest Arrivals</option>
       </select>
     </div>

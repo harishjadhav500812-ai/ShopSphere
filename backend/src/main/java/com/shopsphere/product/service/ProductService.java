@@ -1,5 +1,6 @@
 package com.shopsphere.product.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,22 +45,50 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> listAll() {
-        return listFiltered(null, null, null);
+        return listFiltered(null, null, null, null, null, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> listFiltered(Long categoryId, String search, Boolean activeOnly) {
+    public List<ProductResponse> listFiltered(
+            Long categoryId,
+            String search,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Double minRating,
+            Boolean inStockOnly,
+            String brand,
+            String sort,
+            Boolean activeOnly
+    ) {
         List<Product> products = productRepository.findAll();
 
         String query = search != null ? search.trim().toLowerCase(Locale.ROOT) : null;
+        String brandFilter = brand != null ? brand.trim().toLowerCase(Locale.ROOT) : null;
         boolean filterActive = activeOnly != null ? activeOnly : false;
+        boolean filterInStock = inStockOnly != null ? inStockOnly : false;
 
         List<Product> filtered = products.stream().filter(p -> {
             if (filterActive && !p.isActive()) {
                 return false;
             }
+            if (filterInStock && (p.getStock() == null || p.getStock() <= 0)) {
+                return false;
+            }
             if (categoryId != null && (p.getCategory() == null || !categoryId.equals(p.getCategory().getId()))) {
                 return false;
+            }
+            if (minPrice != null && p.getPriceAmount().compareTo(minPrice) < 0) {
+                return false;
+            }
+            if (maxPrice != null && p.getPriceAmount().compareTo(maxPrice) > 0) {
+                return false;
+            }
+            if (brandFilter != null && !brandFilter.isEmpty()) {
+                boolean matchNameBrand = p.getName() != null && p.getName().toLowerCase(Locale.ROOT).contains(brandFilter);
+                boolean matchDescBrand = p.getDescription() != null && p.getDescription().toLowerCase(Locale.ROOT).contains(brandFilter);
+                if (!matchNameBrand && !matchDescBrand) {
+                    return false;
+                }
             }
             if (query != null && !query.isEmpty()) {
                 boolean matchesName = p.getName() != null && p.getName().toLowerCase(Locale.ROOT).contains(query);
@@ -73,9 +102,28 @@ public class ProductService {
 
         List<Long> productIds = filtered.stream().map(Product::getId).toList();
         Map<Long, ReviewService.ReviewSummary> summaries = reviewService.summariesForProducts(productIds);
-        return filtered.stream()
+
+        List<ProductResponse> responses = new ArrayList<>(filtered.stream()
                 .map(p -> toResponseWithSummary(p, summaries.get(p.getId())))
-                .toList();
+                .filter(res -> minRating == null || (res.averageRating() != null && res.averageRating() >= minRating))
+                .toList());
+
+        // Sort handling
+        if (sort != null) {
+            switch (sort.toLowerCase(Locale.ROOT)) {
+                case "price_asc" -> responses.sort((a, b) -> a.price().compareTo(b.price()));
+                case "price_desc" -> responses.sort((a, b) -> b.price().compareTo(a.price()));
+                case "rating" -> responses.sort((a, b) -> {
+                    Double rA = a.averageRating() != null ? a.averageRating() : 0.0;
+                    Double rB = b.averageRating() != null ? b.averageRating() : 0.0;
+                    return Double.compare(rB, rA);
+                });
+                case "newest" -> responses.sort((a, b) -> Long.compare(b.id(), a.id()));
+                default -> { /* relevance or default */ }
+            }
+        }
+
+        return responses;
     }
 
     @Transactional(readOnly = true)
