@@ -160,6 +160,34 @@ export interface CartItem {
   priceCurrency: string;
   quantity: number;
   available: boolean;
+  imageUrl?: string;
+  categoryName?: string;
+  stock?: number;
+  averageRating?: number;
+  reviewCount?: number;
+  originalPrice?: number;
+}
+
+// Search Suggestions
+export interface ProductSuggestionDto {
+  id: number;
+  name: string;
+  price: number;
+  priceCurrency: string;
+  imageUrl?: string;
+  categoryName?: string;
+}
+
+export interface CategorySuggestionDto {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface SearchSuggestionsResponse {
+  products: ProductSuggestionDto[];
+  categories: CategorySuggestionDto[];
+  brands: string[];
 }
 
 export interface Cart {

@@ -24,6 +24,8 @@ import com.shopsphere.cart.repository.CartRepository;
 import com.shopsphere.product.domain.Product;
 import com.shopsphere.product.repository.ProductRepository;
 
+import com.shopsphere.review.service.ReviewService;
+
 @Service
 public class CartService {
 
@@ -32,11 +34,18 @@ public class CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final ReviewService reviewService;
 
-    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRepository productRepository) {
+    public CartService(
+            CartRepository cartRepository,
+            CartItemRepository cartItemRepository,
+            ProductRepository productRepository,
+            ReviewService reviewService
+    ) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
+        this.reviewService = reviewService;
     }
 
     @Transactional(readOnly = true)
@@ -46,11 +55,31 @@ public class CartService {
             return CartMapper.toCartResponse(cart, List.of(), Map.of());
         }
 
-        List<CartItemResponse> items = cartItemRepository.findByCartId(cart.getId()).stream()
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
+        List<Long> productIds = cartItems.stream().map(CartItem::getProductId).distinct().toList();
+        Map<Long, ReviewService.ReviewSummary> summaries = reviewService.summariesForProducts(productIds);
+
+        List<CartItemResponse> items = cartItems.stream()
                 .map(item -> {
                     Optional<Product> p = productRepository.findById(item.getProductId());
                     boolean available = p.isPresent() && p.get().isActive();
-                    return CartMapper.toItemResponse(item, available);
+                    String imageUrl = p.map(Product::getImageUrl).orElse(null);
+                    String categoryName = p.map(pr -> pr.getCategory() != null ? pr.getCategory().getName() : null).orElse(null);
+                    Integer stock = p.map(Product::getStock).orElse(0);
+                    ReviewService.ReviewSummary summary = summaries.get(item.getProductId());
+                    Double avgRating = summary != null ? summary.averageRating() : null;
+                    Integer reviewCount = summary != null ? summary.reviewCount() : 0;
+                    BigDecimal originalPrice = p.map(pr -> pr.getPriceAmount().multiply(BigDecimal.valueOf(1.20)).setScale(2, java.math.RoundingMode.HALF_UP)).orElse(null);
+                    return CartMapper.toItemResponse(
+                            item,
+                            available,
+                            imageUrl,
+                            categoryName,
+                            stock,
+                            avgRating,
+                            reviewCount,
+                            originalPrice
+                    );
                 })
                 .collect(Collectors.toList());
 

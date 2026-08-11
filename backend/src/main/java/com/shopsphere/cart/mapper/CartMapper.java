@@ -3,7 +3,6 @@ package com.shopsphere.cart.mapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.shopsphere.cart.domain.Cart;
 import com.shopsphere.cart.domain.CartItem;
@@ -13,7 +12,16 @@ import com.shopsphere.cart.dto.CartResponse;
 public final class CartMapper {
     private CartMapper() {}
 
-    public static CartItemResponse toItemResponse(CartItem item, boolean available) {
+    public static CartItemResponse toItemResponse(
+            CartItem item,
+            boolean available,
+            String imageUrl,
+            String categoryName,
+            Integer stock,
+            Double averageRating,
+            Integer reviewCount,
+            BigDecimal originalPrice
+    ) {
         return new CartItemResponse(
                 item.getId(),
                 item.getProductId(),
@@ -22,7 +30,13 @@ public final class CartMapper {
                 item.getPriceAmountSnapshot(),
                 item.getPriceCurrencySnapshot(),
                 item.getQuantity(),
-                available
+                available,
+                imageUrl,
+                categoryName,
+                stock,
+                averageRating,
+                reviewCount,
+                originalPrice
         );
     }
 

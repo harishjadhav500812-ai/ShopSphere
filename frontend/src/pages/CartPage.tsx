@@ -49,6 +49,12 @@ export const CartPage: React.FC = () => {
     currency: i.priceCurrency,
     quantity: i.quantity,
     available: i.available,
+    imageUrl: i.imageUrl,
+    categoryName: i.categoryName,
+    stock: i.stock,
+    averageRating: i.averageRating,
+    reviewCount: i.reviewCount,
+    originalPrice: i.originalPrice,
   }));
 
   const currency = cart?.items?.[0]?.priceCurrency;

@@ -10,14 +10,13 @@ import {
   Menu, X, Sparkles, ChevronDown, Truck,
 } from 'lucide-react';
 
+import { SearchAutocomplete } from './SearchAutocomplete';
+
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('categoryId') || 'all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -25,20 +24,6 @@ export const Navbar: React.FC = () => {
   React.useEffect(() => {
     categoryApi.getAllCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
-
-  React.useEffect(() => {
-    setSearchQuery(searchParams.get('search') || '');
-    setSelectedCategory(searchParams.get('categoryId') || 'all');
-  }, [searchParams]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchQuery.trim()) params.set('search', searchQuery.trim());
-    if (selectedCategory !== 'all') params.set('categoryId', selectedCategory);
-    navigate(`/products?${params.toString()}`);
-    setIsMobileMenuOpen(false);
-  };
 
   const handleLogout = () => {
     logout();
@@ -92,37 +77,9 @@ export const Navbar: React.FC = () => {
         </Link>
 
         {/* ── Search Bar (desktop) ── */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="desktop-only"
-          style={{ flex: 1, maxWidth: 600, display: 'flex', alignItems: 'stretch', border: '2px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', background: '#f9fafb', transition: 'border-color 200ms' }}
-          onFocus={() => { const el = document.querySelector('.search-form') as HTMLElement; if (el) el.style.borderColor = '#0d9488'; }}
-        >
-          <select
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
-            style={{ background: '#f3f4f6', border: 'none', borderRight: '1px solid #e5e7eb', padding: '0 0.875rem', fontSize: '0.8125rem', color: '#374151', cursor: 'pointer', fontWeight: 500, outline: 'none', maxWidth: 160 }}
-          >
-            <option value="all">All Departments</option>
-            {categories.map(c => <option key={c.id} value={c.id.toString()}>{c.name}</option>)}
-          </select>
-
-          <input
-            type="text"
-            placeholder="Search for products, brands and more..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ flex: 1, border: 'none', background: 'transparent', padding: '0 0.875rem', fontSize: '0.875rem', color: '#111827', outline: 'none', minWidth: 0 }}
-          />
-
-          <button
-            type="submit"
-            style={{ background: '#0d9488', border: 'none', color: '#fff', padding: '0 1.125rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 600, fontSize: '0.875rem', transition: 'background 180ms' }}
-            className="btn-press"
-          >
-            <Search size={16} />
-          </button>
-        </form>
+        <div className="desktop-only" style={{ flex: 1, maxWidth: 600 }}>
+          <SearchAutocomplete categories={categories} />
+        </div>
 
         {/* ── Right Actions ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: 'auto', flexShrink: 0 }}>
@@ -223,21 +180,7 @@ export const Navbar: React.FC = () => {
 
       {/* ── Mobile Search Bar ── */}
       <div className="mobile-only" style={{ padding: '0.625rem 1rem', background: '#f9fafb', borderTop: '1px solid #f3f4f6' }}>
-        <form
-          onSubmit={handleSearchSubmit}
-          style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}
-        >
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ flex: 1, border: 'none', background: 'transparent', padding: '0.6rem 0.875rem', fontSize: '0.875rem', color: '#111827', outline: 'none' }}
-          />
-          <button type="submit" style={{ background: '#0d9488', border: 'none', color: '#fff', padding: '0.6rem 1rem', cursor: 'pointer' }}>
-            <Search size={16} />
-          </button>
-        </form>
+        <SearchAutocomplete categories={categories} isMobile={true} onNavigateMobile={() => setIsMobileMenuOpen(false)} />
       </div>
 
       {/* ── Mobile Slide-Down Menu ── */}

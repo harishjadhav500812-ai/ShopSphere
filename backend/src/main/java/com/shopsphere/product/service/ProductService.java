@@ -20,6 +20,10 @@ import com.shopsphere.product.mapper.ProductMapper;
 import com.shopsphere.product.repository.ProductRepository;
 import com.shopsphere.review.service.ReviewService;
 
+import java.util.ArrayList;
+
+import com.shopsphere.product.dto.SearchSuggestionsResponse;
+
 @Service
 public class ProductService {
 
@@ -28,6 +32,9 @@ public class ProductService {
     private final ReviewService reviewService;
 
     private static final Pattern NON_ALNUM = Pattern.compile("[^a-z0-9\\-]");
+    private static final List<String> KNOWN_BRANDS = List.of(
+            "Apple", "Samsung", "HP", "Lenovo", "Dell", "Sony", "Bose", "Nike", "Adidas", "Asus", "Acer", "Logitech"
+    );
 
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ReviewService reviewService) {
         this.productRepository = productRepository;
@@ -37,12 +44,88 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> listAll() {
+        return listFiltered(null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listFiltered(Long categoryId, String search, Boolean activeOnly) {
         List<Product> products = productRepository.findAll();
-        List<Long> productIds = products.stream().map(Product::getId).toList();
+
+        String query = search != null ? search.trim().toLowerCase(Locale.ROOT) : null;
+        boolean filterActive = activeOnly != null ? activeOnly : false;
+
+        List<Product> filtered = products.stream().filter(p -> {
+            if (filterActive && !p.isActive()) {
+                return false;
+            }
+            if (categoryId != null && (p.getCategory() == null || !categoryId.equals(p.getCategory().getId()))) {
+                return false;
+            }
+            if (query != null && !query.isEmpty()) {
+                boolean matchesName = p.getName() != null && p.getName().toLowerCase(Locale.ROOT).contains(query);
+                boolean matchesDesc = p.getDescription() != null && p.getDescription().toLowerCase(Locale.ROOT).contains(query);
+                boolean matchesCat = p.getCategory() != null && p.getCategory().getName() != null && p.getCategory().getName().toLowerCase(Locale.ROOT).contains(query);
+                boolean matchesSku = p.getSku() != null && p.getSku().toLowerCase(Locale.ROOT).contains(query);
+                return matchesName || matchesDesc || matchesCat || matchesSku;
+            }
+            return true;
+        }).toList();
+
+        List<Long> productIds = filtered.stream().map(Product::getId).toList();
         Map<Long, ReviewService.ReviewSummary> summaries = reviewService.summariesForProducts(productIds);
-        return products.stream()
+        return filtered.stream()
                 .map(p -> toResponseWithSummary(p, summaries.get(p.getId())))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SearchSuggestionsResponse getSearchSuggestions(String rawQuery) {
+        if (rawQuery == null || rawQuery.trim().isEmpty()) {
+            return new SearchSuggestionsResponse(List.of(), List.of(), List.of());
+        }
+
+        String q = rawQuery.trim().toLowerCase(Locale.ROOT);
+
+        // Matching products
+        List<Product> allProducts = productRepository.findAll();
+        List<SearchSuggestionsResponse.ProductSuggestionDto> productSuggestions = allProducts.stream()
+                .filter(Product::isActive)
+                .filter(p -> {
+                    boolean mName = p.getName() != null && p.getName().toLowerCase(Locale.ROOT).contains(q);
+                    boolean mDesc = p.getDescription() != null && p.getDescription().toLowerCase(Locale.ROOT).contains(q);
+                    boolean mCat = p.getCategory() != null && p.getCategory().getName() != null && p.getCategory().getName().toLowerCase(Locale.ROOT).contains(q);
+                    return mName || mDesc || mCat;
+                })
+                .limit(5)
+                .map(p -> new SearchSuggestionsResponse.ProductSuggestionDto(
+                        p.getId(),
+                        p.getName(),
+                        p.getPriceAmount(),
+                        p.getPriceCurrency(),
+                        p.getImageUrl(),
+                        p.getCategory() != null ? p.getCategory().getName() : null
+                ))
+                .toList();
+
+        // Matching categories
+        List<Category> allCategories = categoryRepository.findAll();
+        List<SearchSuggestionsResponse.CategorySuggestionDto> categorySuggestions = allCategories.stream()
+                .filter(c -> c.getName() != null && c.getName().toLowerCase(Locale.ROOT).contains(q))
+                .limit(4)
+                .map(c -> new SearchSuggestionsResponse.CategorySuggestionDto(
+                        c.getId(),
+                        c.getName(),
+                        c.getSlug()
+                ))
+                .toList();
+
+        // Matching brands
+        List<String> brandSuggestions = KNOWN_BRANDS.stream()
+                .filter(b -> b.toLowerCase(Locale.ROOT).contains(q) || q.contains(b.toLowerCase(Locale.ROOT)))
+                .limit(4)
+                .toList();
+
+        return new SearchSuggestionsResponse(productSuggestions, categorySuggestions, brandSuggestions);
     }
 
     @Transactional(readOnly = true)

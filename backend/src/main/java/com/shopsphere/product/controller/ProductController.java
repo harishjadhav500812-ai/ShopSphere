@@ -19,8 +19,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
 import com.shopsphere.product.dto.CreateProductRequest;
 import com.shopsphere.product.dto.ProductResponse;
+import com.shopsphere.product.dto.SearchSuggestionsResponse;
 import com.shopsphere.product.dto.UpdateProductRequest;
 import com.shopsphere.product.dto.UpdateProductStatusRequest;
 import com.shopsphere.product.dto.UpdateProductStockRequest;
@@ -51,8 +54,17 @@ public class ProductController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ProductResponse> list() {
-        return productService.listAll();
+    public List<ProductResponse> list(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean activeOnly
+    ) {
+        return productService.listFiltered(categoryId, search, activeOnly);
+    }
+
+    @GetMapping(path = "/search/suggestions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public SearchSuggestionsResponse searchSuggestions(@RequestParam(name = "q", defaultValue = "") String query) {
+        return productService.getSearchSuggestions(query);
     }
 
     @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

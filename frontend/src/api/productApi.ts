@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   CreateProductRequest,
   Product,
+  SearchSuggestionsResponse,
   UpdateProductRequest,
   UpdateProductStatusRequest,
   UpdateStockRequest,
@@ -13,13 +14,13 @@ export const productApi = {
     const query = new URLSearchParams();
     if (params?.categoryId) query.append('categoryId', params.categoryId.toString());
     if (params?.search) query.append('search', params.search);
+    if (params?.activeOnly) query.append('activeOnly', 'true');
     const queryString = query.toString() ? `?${query.toString()}` : '';
-    return apiClient.get<Product[]>(`/api/products${queryString}`).then(products => {
-      if (params?.activeOnly) {
-        return products.filter(p => p.active);
-      }
-      return products;
-    });
+    return apiClient.get<Product[]>(`/api/products${queryString}`);
+  },
+
+  getSearchSuggestions(query: string): Promise<SearchSuggestionsResponse> {
+    return apiClient.get<SearchSuggestionsResponse>(`/api/products/search/suggestions?q=${encodeURIComponent(query)}`);
   },
 
   getProductById(id: number): Promise<Product> {

@@ -10,5 +10,11 @@ public record CartItemResponse(
         BigDecimal priceAmount,
         String priceCurrency,
         Integer quantity,
-        boolean available
+        boolean available,
+        String imageUrl,
+        String categoryName,
+        Integer stock,
+        Double averageRating,
+        Integer reviewCount,
+        BigDecimal originalPrice
 ) {}
