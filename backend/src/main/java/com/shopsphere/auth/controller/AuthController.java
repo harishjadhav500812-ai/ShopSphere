@@ -6,9 +6,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.shopsphere.auth.dto.ForgotPasswordRequest;
+import com.shopsphere.auth.dto.ForgotPasswordResponse;
 import com.shopsphere.auth.dto.LoginRequest;
 import com.shopsphere.auth.dto.LoginResponse;
+import com.shopsphere.auth.dto.ResetPasswordRequest;
+import com.shopsphere.auth.dto.ResetPasswordResponse;
 import com.shopsphere.auth.service.AuthService;
+import com.shopsphere.auth.service.PasswordResetService;
 import com.shopsphere.user.domain.User;
 import com.shopsphere.user.dto.UserResponse;
 import com.shopsphere.verification.dto.ResendVerificationRequest;
@@ -24,10 +29,16 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthService authService, EmailVerificationService emailVerificationService) {
+    public AuthController(
+            AuthService authService,
+            EmailVerificationService emailVerificationService,
+            PasswordResetService passwordResetService
+    ) {
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -55,5 +66,15 @@ public class AuthController {
                 emailVerificationService.isMailConfigured(),
                 emailVerificationService.currentDevCode(user)
         );
+    }
+
+    @PostMapping(path = "/forgot-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ForgotPasswordResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return passwordResetService.requestPasswordReset(request);
+    }
+
+    @PostMapping(path = "/reset-password", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResetPasswordResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return passwordResetService.resetPassword(request);
     }
 }
